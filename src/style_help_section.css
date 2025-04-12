@@ -1,0 +1,38 @@
+.help-section {
+  margin-bottom: 15px;
+}
+
+.help-section a {
+  color: #2c3e50;
+  text-decoration: none;
+  background-color: #f2f2f2;
+  padding: 8px 15px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.help-section a:hover {
+  background-color: #e0e0e0;
+}
+
+.instructions-panel {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.instructions-panel h2 {
+  margin-top: 0;
+}
+
+.instructions-panel h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.instructions-panel ul {
+  margin-bottom: 15px;
+  text-align: left;
+}
