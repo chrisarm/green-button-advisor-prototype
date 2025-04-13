@@ -2,15 +2,10 @@ import { ref } from "vue";
 import {
   parse,
   format,
-  addDays,
   getDay,
   getMonth,
   getHours,
   getDate,
-  getYear,
-  startOfMonth,
-  getUnixTime,
-  differenceInMonths,
   isValid,
 } from "date-fns";
 
@@ -259,26 +254,33 @@ export function useEnergyCalculator() {
         periodMap[key] = {
           season: row.season,
           rate_tier1: row.rate_tier1,
-          rate_tier2: row.rate_tier2,
           Consumption: 0,
           cost1: 0,
           cost2: 0,
+          costDiff: 0,
         };
       }
       periodMap[key].Consumption += row.Consumption;
       periodMap[key].cost1 += row.cost1;
       periodMap[key].cost2 += row.cost2;
+      periodMap[key].costDiff += Math.abs(row.cost2 - row.cost1);
     });
 
     periodSummary.value = Object.values(periodMap)
       .map((summary) => ({
         ...summary,
-        avg_rate1: (summary.Consumption > 0 ? summary.cost1 : 0).toFixed(5),
-        avg_rate2: (summary.Consumption > 0 ? summary.cost2 : 0).toFixed(5),
+        avg_rate1: (summary.Consumption > 0
+          ? summary.cost1 / summary.Consumption
+          : 0
+        ).toFixed(5),
+        avg_rate2: (summary.Consumption > 0
+          ? summary.cost2 / summary.Consumption
+          : 0
+        ).toFixed(5),
         Consumption: summary.Consumption.toFixed(2),
         cost1: summary.cost1.toFixed(2),
         cost2: summary.cost2.toFixed(2),
-        costSavings: Math.abs(summary.cost1 - summary.cost2).toFixed(2),
+        costSavings: Math.abs(summary.costDiff).toFixed(2),
       }))
       .sort(
         (a, b) =>
@@ -320,7 +322,6 @@ export function useEnergyCalculator() {
     let monthlyDatasets = [];
 
     try {
-      // Wrap calculations in try...catch for safety
       // Check if data is valid and has entries before processing
       if (data && data.length > 0) {
         // --- Daily Usage Chart Data ---
@@ -375,7 +376,7 @@ export function useEnergyCalculator() {
               backgroundColor: "red",
             },
           ];
-        } // If no sortedDates, dailyLabels/Datasets remain empty arrays
+        }
 
         // --- Monthly Cost Chart Data ---
         // Ensure monthlySummary.value is valid and populated before mapping

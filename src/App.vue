@@ -104,8 +104,8 @@
             <th>Rate Tier</th>
             <th>Total kWh</th>
 	    <th>DR-TOU-1 ($/kWh)</th>
-            <th>EV-TOU-5 ($/kWh)</th>
-            <th>Estimated Difference($)</th>
+            <th>EV-TOU-5* ($/kWh)</th>
+            <th>Estimated Difference ($)</th>
           </tr>
         </thead>
         <tbody>
@@ -119,6 +119,7 @@
           </tr>
         </tbody>
       </table>
+      <p>*This doesn't account for the fixed monthly fee</p>
 
       <h2>Potential Monthly Savings</h2>
        <table>
@@ -210,8 +211,8 @@ const loadSampleData = async () => {
     processing.value = true;
     error.value = null;
 
-    // Fetch the sample data file
-    const response = await fetch('/data/sample.csv');
+    // Use the imported path
+    const response = await fetch(sampleCsvPath);
 
     if (!response.ok) {
       throw new Error(`Failed to load sample data (${response.status})`);
