@@ -10,18 +10,36 @@
       />
       <h1 v-if="logoError">Green Button Advisor</h1>
     </div>
-    <h2>We want to make the world a bit greener for everyone.</h2>
-
+    <h2>We want to make the world a bit greener for everyone</h2>
 
     <div v-if="!overallSummary && !processing">
       <h4>Upload SDGE Green Button Data</h4>
-      <FileUpload @file-parsed="handleData" />
+      <FileUpload @file-parsed="handleUploadData" />
+      <div class="help-section">
+        <a href="#" @click.prevent="showInstructions = !showInstructions">
+          {{ showInstructions ? 'Hide Instructions' : 'Show Instructions' }}
+        </a> 
+        <button @click="loadSampleData" class="sample-data-btn">
+          Try Sample Data
+        </button>
+      </div>
+    </div>
+
+    <!--div v-if="!overallSummary && !processing">
+      <h4>Upload SDGE Green Button Data</h4>
+      <FileUpload @file-parsed="handleFileUpload" />
       <div class="help-section">
       <a href="#" @click.prevent="showInstructions = !showInstructions">
         {{ showInstructions ? 'Hide Instructions' : 'Show Instructions' }}
-      </a>
+      </a> 
+      <button @click="loadSampleData" class="sample-data-btn">
+        Try Sample Data
+      </button>
       </div>
-    </div>
+    </div-->
+
+    <!--div class="sample-data-container">
+    </div-->
 
     <div v-if="processing">
       <p>Processing...</p>
@@ -168,6 +186,7 @@ import FileUpload from './components/FileUpload.vue';
 import { useEnergyCalculator } from './composables/useEnergyCalculator.js';
 import { Bar as BarChart } from 'vue-chartjs'; // Use Bar component
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale } from 'chart.js'; // Import necessary elements
+import { parseGreenButtonCsv } from './utils/csvParser';
 
 // Register Chart.js components
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
@@ -185,10 +204,39 @@ const {
   chartData
 } = useEnergyCalculator();
 
-const handleData = (parsedData) => {
-  // console.log("Received parsed data in App.vue:", parsedData);
+
+const loadSampleData = async () => {
+  try {
+    processing.value = true;
+    error.value = null;
+
+    // Fetch the sample data file
+    const response = await fetch('/data/sample.csv');
+
+    if (!response.ok) {
+      throw new Error(`Failed to load sample data (${response.status})`);
+    }
+
+    const csvText = await response.text();
+
+    // Use our shared parsing module
+    const parsedData = await parseGreenButtonCsv(csvText);
+
+    // Handle the parsed data same as file upload
+    processData(parsedData);
+
+  } catch (err) {
+    console.error('Error loading sample data:', err);
+    error.value = err.message;
+    processing.value = false;
+  }
+};
+
+const handleUploadData = (parsedData) => {
+  console.log("Received parsed data:", parsedData);
   processData(parsedData);
 };
+
 
 // Chart options (customize as needed)
 const dailyChartOptions = ref({
@@ -222,48 +270,3 @@ const monthlyChartOptions = ref({
 });
 
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  padding: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-.charts-container {
-    display: flex;
-    flex-direction: column;
-    gap: 30px; /* Space between charts */
-    margin-top: 20px;
-}
-
-/* Give charts a defined height */
-.charts-container > div {
-    height: 400px;
-    position: relative; /* Needed for chart.js responsiveness */
-}
-
-label {
-    margin-right: 10px;
-}
-
-input[type="file"] {
-    margin-bottom: 20px;
-}
-</style>
-

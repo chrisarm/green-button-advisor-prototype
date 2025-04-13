@@ -58,6 +58,25 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.sample-data-container {
+  margin: 15px 0;
+}
+
+.sample-data-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.sample-data-btn:hover {
+  background-color: #3e8e41;
+}
+
 .charts-container > div {
   margin-bottom: 40px; /* Adds space below each chart */
   margin-top: 20px; /* Adds space above each chart */
@@ -68,6 +87,7 @@ button:focus-visible {
 }
 
 #app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
@@ -85,4 +105,42 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  font-size: 1.2em;
+}
+
+.charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px; /* Space between charts */
+  margin-top: 20px;
+}
+
+/* Give charts a defined height */
+.charts-container > div {
+  height: 400px;
+  position: relative; /* Needed for chart.js responsiveness */
+}
+
+label {
+  margin-right: 10px;
+}
+
+input[type="file"] {
+  margin-bottom: 20px;
 }

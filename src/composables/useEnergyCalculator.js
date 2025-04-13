@@ -172,28 +172,6 @@ export function useEnergyCalculator() {
       let totalFixedCharge = 0;
       const uniqueMonths = new Set();
 
-      // const costCalculated = processed.map((row) => {
-      //   const rateInfo = getRateDetails(
-      //     row.hour,
-      //     row.is_weekend,
-      //     row.is_summer,
-      //     row.is_spring,
-      //   );
-      //   const cost = row.Consumption * rateInfo.rate;
-
-      //   // Track unique months for fixed charge calculation
-      //   const monthYearKey = format(row.datetime, "yyyy-MM");
-      //   uniqueMonths.add(monthYearKey);
-
-      //   return {
-      //     ...row,
-      //     rate: rateInfo.rate,
-      //     rate_tier: rateInfo.rate_tier,
-      //     cost: cost,
-      //     month_year_key: monthYearKey, // For grouping
-      //   };
-      // });
-
       const costCalculated = processed.map((row) => {
         // Get rate details from both functions
         const rateInfo1 = getRateDetails(
@@ -295,18 +273,12 @@ export function useEnergyCalculator() {
     periodSummary.value = Object.values(periodMap)
       .map((summary) => ({
         ...summary,
-        avg_rate1: (summary.Consumption > 0
-          ? summary.cost1 / summary.Consumption
-          : 0
-        ).toFixed(5),
-        avg_rate2: (summary.Consumption > 0
-          ? summary.cost2 / summary.Consumption
-          : 0
-        ).toFixed(5),
+        avg_rate1: (summary.Consumption > 0 ? summary.cost1 : 0).toFixed(5),
+        avg_rate2: (summary.Consumption > 0 ? summary.cost2 : 0).toFixed(5),
         Consumption: summary.Consumption.toFixed(2),
         cost1: summary.cost1.toFixed(2),
         cost2: summary.cost2.toFixed(2),
-        costSavings: (summary.cost1 - summary.cost2).toFixed(2),
+        costSavings: Math.abs(summary.cost1 - summary.cost2).toFixed(2),
       }))
       .sort(
         (a, b) =>
