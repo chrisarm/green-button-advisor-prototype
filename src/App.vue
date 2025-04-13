@@ -188,6 +188,7 @@ import { useEnergyCalculator } from './composables/useEnergyCalculator.js';
 import { Bar as BarChart } from 'vue-chartjs'; // Use Bar component
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale } from 'chart.js'; // Import necessary elements
 import { parseGreenButtonCsv } from './utils/csvParser';
+import sampleCsvPath from './assets/sample.csv?url';
 
 // Register Chart.js components
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
