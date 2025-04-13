@@ -309,7 +309,9 @@ export function useEnergyCalculator() {
         Consumption: summary.Consumption.toFixed(2),
         cost_tier1: summary.cost1.toFixed(2),
         cost_tier2: summary.cost2.toFixed(2),
-        costSavings: Math.abs(summary.cost1 - summary.cost2).toFixed(2),
+        costSavings: Math.abs(
+          summary.cost1 + MONTHLY_FIXED_CHARGE - summary.cost2,
+        ).toFixed(2),
       }))
       .sort((a, b) => a.datetime.localeCompare(b.datetime)); // Sort by month
   };

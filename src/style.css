@@ -125,10 +125,19 @@ th {
 }
 
 .charts-container {
+  width: 100%;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   gap: 30px; /* Space between charts */
   margin-top: 20px;
+}
+
+.chart-wrapper {
+  height: 400px; /* Fixed height to prevent infinite growth */
+  width: 100%;
+  position: relative;
+  margin-bottom: 2rem;
 }
 
 /* Give charts a defined height */

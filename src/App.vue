@@ -25,22 +25,6 @@
       </div>
     </div>
 
-    <!--div v-if="!overallSummary && !processing">
-      <h4>Upload SDGE Green Button Data</h4>
-      <FileUpload @file-parsed="handleFileUpload" />
-      <div class="help-section">
-      <a href="#" @click.prevent="showInstructions = !showInstructions">
-        {{ showInstructions ? 'Hide Instructions' : 'Show Instructions' }}
-      </a> 
-      <button @click="loadSampleData" class="sample-data-btn">
-        Try Sample Data
-      </button>
-      </div>
-    </div-->
-
-    <!--div class="sample-data-container">
-    </div-->
-
     <div v-if="processing">
       <p>Processing...</p>
     </div>
@@ -84,7 +68,7 @@
       <p style="color: red;">Error: {{ error }}</p>
     </div>
 
-    <div v-if="overallSummary && !processing && !error">
+    <!--div v-if="overallSummary && !processing && !error">
       <h2>Summary Estimate</h2>
       <p>This shows the estimated difference between the DR-TOU-1 and the EV-TOU-5 SDGE plans.</p>
       <table>
@@ -121,43 +105,127 @@
       </table>
       <p>*This doesn't account for the fixed monthly fee</p>
 
-      <h2>Potential Monthly Savings</h2>
-       <table>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Total kWh</th>
-            <th>Monthly Difference ($)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, index) in monthlySummary" :key="index">
-            <td>{{ row.datetime }}</td>
-            <td>{{ row.Consumption }}</td>
-            <td>${{ row.total }}</td>
-          </tr>
-        </tbody>
-      </table>
-
       <h2>Visualizations</h2>
       <div class="charts-container">
-        <!-- Only render if there are datasets to show -->
         <div v-if="chartData.dailyUsage && chartData.dailyUsage.datasets.length > 0">
            <h3>Daily Usage by Rate Period</h3>
            <BarChart :data="chartData.dailyUsage" :options="dailyChartOptions" />
         </div>
-         <div v-else-if="!processing && overallSummary"> <!-- Show message if processed but no daily data -->
-            <p>No daily usage data to display.</p>
-         </div>
+        <div v-else-if="!processing && overallSummary"> 
+           <p>No daily usage data to display.</p>
+        </div>
+      </div>
 
-        <!-- Only render if there are datasets to show -->
-        <div v-if="chartData.monthlyCost && chartData.monthlyCost.datasets.length > 0">
+      <div v-if="chartData.monthlyCost && chartData.monthlyCost.datasets.length > 0">
+        <h2>Potential Monthly Savings</h2>
+         <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Total kWh</th>
+              <th>Monthly Difference ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, index) in monthlySummary" :key="index">
+              <td>{{ row.datetime }}</td>
+              <td>{{ row.Consumption }}</td>
+              <td>${{ row.total }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+      <div class="charts-container">
             <h3>Savings by Month</h3>
            <BarChart :data="chartData.monthlyCost" :options="monthlyChartOptions" />
         </div>
-         <div v-else-if="!processing && overallSummary"> <!-- Show message if processed but no monthly data -->
+      <div v-if="!chartData.monthlyCost || !chartData.monthlyCost.datasets.length > 0">
+         <div v-if="!processing && overallSummary"> 
             <p>No monthly cost data to display.</p>
          </div>
+      </div>
+      </div-->
+      <div v-if="overallSummary && !processing && !error">
+        <!-- Summary Estimate Section -->
+        <h2>Summary Estimate</h2>
+        <p>This shows the estimated difference between the DR-TOU-1 and the EV-TOU-5 SDGE plans.</p>
+        <table>
+          <tbody>
+            <tr v-for="(value, key) in overallSummary" :key="key">
+              <td>{{ key }}</td>
+              <td>{{ value }}</td>
+            </tr>
+          </tbody>
+        </table>
+      
+        <!-- Usage by Season and Period Section -->
+        <h2>Usage by Season and Period</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>Rate Tier</th>
+              <th>Total kWh</th>
+              <th>DR-TOU-1 ($/kWh)</th>
+              <th>EV-TOU-5* ($/kWh)</th>
+              <th>Estimated Difference ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, index) in periodSummary" :key="index">
+              <td>{{ row.season }}</td>
+              <td>{{ row.rate_tier1 }}</td>
+              <td>{{ row.Consumption }}</td>
+              <td>${{ row.avg_rate2 }}</td>
+              <td>${{ row.avg_rate1 }}</td>
+              <td>${{ row.costSavings }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>*This doesn't account for the fixed monthly fee</p>
+      
+        <!-- Visualizations Section -->
+        <h2>Visualizations</h2>
+        <div class="charts-container">
+          <div v-if="chartData.dailyUsage && chartData.dailyUsage.datasets.length > 0" class="chart-wrapper">
+            <h3>Daily Usage by Rate Period</h3>
+            <BarChart :data="chartData.dailyUsage" :options="dailyChartOptions" />
+          </div>
+          <div v-else>
+            <p>No daily usage data to display.</p>
+          </div>
+        </div>
+      
+        <!-- Monthly Savings Section -->
+        <div v-if="chartData.monthlyCost && chartData.monthlyCost.datasets.length > 0">
+          <h2>Potential Monthly Savings</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Total kWh</th>
+                <th>Monthly Difference ($)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in monthlySummary" :key="index">
+                <td>{{ row.datetime }}</td>
+                <td>{{ row.Consumption }}</td>
+                <td>${{ row.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+      
+          <div class="charts-container">
+            <div class="chart-wrapper">
+              <h3>Savings by Month</h3>
+              <BarChart :data="chartData.monthlyCost" :options="monthlyChartOptions" />
+            </div>
+          </div>
+        </div>
+        <div v-else-if="!processing && overallSummary">
+          <p>No monthly cost data to display.</p>
+        </div>
       </div>
 
       <div class="disclaimer">
@@ -177,7 +245,6 @@
         <p><strong>Your Privacy Matters:</strong> This is a prototype of what we actually hope to build. We plan to make this web app into a comprehensive energy advisor that helps you save energy and money.  Since this is a prototype, your energy data never leaves your device. All analysis happens locally in your browser—this site doesn't store or transmit your personal usage information.</p>
         <p>We're working make this better able to handle up to 12 months for the most accurate analysis. So some charts may look wierd until we finish that effort.</p>
       </div>
-    </div>
   </div>
 </template>
 
