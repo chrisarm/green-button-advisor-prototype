@@ -391,7 +391,7 @@ export function useEnergyCalculator() {
           monthlyDatasets = [
             // Add fallback || 0 for safety during parseFloat
             {
-              label: "Cost Saings",
+              label: "Cost Savings",
               data: monthlySummary.value.map(
                 (m) => parseFloat(m.costSavings) || 0,
               ),
