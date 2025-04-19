@@ -30,7 +30,7 @@
           <p>Another time-of-use plan with varying rate structures.</p>
         </div>
       </div>
-      <button @click="goToMain">Next</button>
+      <button @click="goToMain" class="sample-data-btn">Next</button>
     </div>
 
     <!-- Current App Content -->
@@ -52,7 +52,6 @@
       <div v-if="processing">
         <p>Processing...</p>
       </div>
-      <button @click="goToPlans" class="back-button">Back</button>
 
       <div v-if="showInstructions && !overallSummary" class="instructions-panel">
         <h2>How-To Get Your GreenButton Data</h2>
@@ -169,6 +168,8 @@
         </div>
       </div>
 
+      <button @click="goToPlans" class="sample-data-btn">Back</button>
+      <button @click="startOver" class="sample-data-btn">Start Over</button>
     </div>
     <hr/>
     <div class="disclaimer">
@@ -226,6 +227,11 @@ const goToMain = () => {
 // Function to navigate back to the plans screen
 const goToPlans = () => {
   currentPage.value = 'plans';
+};
+
+// Function to refresh the page
+const startOver = () => {
+  window.location.reload();
 };
 
 // Load sample data
