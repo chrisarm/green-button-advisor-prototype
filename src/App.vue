@@ -1,17 +1,19 @@
 <template>
   <div id="app">
-     <div class="title-container">
+    <div class="header-container">
       <img
-        src="/logo_transparent_small_border_black.png"
-        alt="GreenButton Advisor"
+        src="/Logo.svg"
         class="site-logo"
         @error="logoError = true"
         v-if="!logoError"
+        alt="GreenButton Advisor Logo"
       />
-      <h1 v-if="logoError">GreenButton Advisor</h1>
+      <div class="title-wrapper">
+        <h1 class="title">GreenButton Advisor</h1>
+      </div>
     </div>
-    <h2>Let's make the world a bit greener</h2> 
-    <p>We'll start by seeing how to save money on your energy costs and get a lower SDGE electrical bill.</p>
+    <h2 class="subtitle">Let's make the world a bit greener</h2>
+    <p class="motto">We'll start by saving you some green by finding the best SDGE electrical plan for you.</p>
     <hr/>
     <!-- Plans Screen -->
     <div v-if="currentPage === 'plans'">
@@ -133,7 +135,7 @@
             </tr>
           </tbody>
         </table>
-        <p>*This doesn't account for the fixed monthly fee</p>
+        <p>*Differences in table are less than they appear, this doesn't account for the fixed monthly fee on EV-TOU-5</p>
 
         <!-- Visualizations Section -->
         <h2>Visualizations</h2>
@@ -372,6 +374,87 @@ const monthlySavingsChartOptions = ref({
 </script>
 
 <style scoped>
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+.header-container {
+  display: flex;
+  align-items: center; 
+  padding: 2rem;
+  width: 100%;
+  max-width: 1280px; 
+  margin: 0 auto;
+  min-height: 120px;
+}
+
+.site-logo {
+  width: 100px;
+  height: auto;
+  flex-shrink: 0; 
+}
+
+.title-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center; 
+  flex: 1; 
+  margin-right: 175px;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5em;
+  margin: 0;
+  line-height: 1.2;
+  color: #106632ff;
+}
+
+.subtitle {
+  font-size: 1.5em;
+  margin: 0.5rem 0;
+  font-weight: 400;
+}
+
+.motto {
+  font-size: 1.1em;
+  margin: 0.5rem 0;
+}
+
+/* Mobile responsive design */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .site-logo {
+    position: static;
+    margin-bottom: 1rem;
+    width: 80px; /* Adjust as needed */
+  }
+
+  .title-wrapper {
+    flex: none; /* Resets flex for vertical stacking */
+    margin-right: 0;
+  }
+
+  .title {
+    font-size: 2em;
+  }
+
+  .subtitle {
+    font-size: 1.2em;
+  }
+
+  .motto {
+    font-size: 1em;
+    padding: 0 1rem;
+  }
+}
+
 .plans-container {
   display: flex;
   flex-direction: row;

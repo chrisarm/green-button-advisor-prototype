@@ -238,7 +238,7 @@ export function useEnergyCalculator() {
       data.reduce((sum, row) => sum + row.cost1, 0) + fixedCharge;
     const total_Cost2 = data.reduce((sum, row) => sum + row.cost2, 0);
 
-    const total_Savings = Math.abs(total_Cost1 - total_Cost2);
+    const total_Savings = total_Cost2 - total_Cost1;
 
     overallSummary.value = {
       "Total kWh": totalKWh.toFixed(2),
@@ -263,7 +263,7 @@ export function useEnergyCalculator() {
       periodMap[key].Consumption += row.Consumption;
       periodMap[key].cost1 += row.cost1;
       periodMap[key].cost2 += row.cost2;
-      periodMap[key].costDiff += Math.abs(row.cost2 - row.cost1);
+      periodMap[key].costDiff += row.cost2 - row.cost1;
     });
 
     periodSummary.value = Object.values(periodMap)
@@ -303,14 +303,15 @@ export function useEnergyCalculator() {
       .map((summary) => ({
         ...summary,
         fixed_charge: MONTHLY_FIXED_CHARGE.toFixed(2),
-        total: Math.abs(
-          summary.cost1 + MONTHLY_FIXED_CHARGE - summary.cost2,
-        ).toFixed(2),
+        total: (summary.cost2 - summary.cost1 + MONTHLY_FIXED_CHARGE).toFixed(
+          2,
+        ),
         Consumption: summary.Consumption.toFixed(2),
         cost_tier1: summary.cost1.toFixed(2),
         cost_tier2: summary.cost2.toFixed(2),
-        costSavings: Math.abs(
-          summary.cost1 + MONTHLY_FIXED_CHARGE - summary.cost2,
+        costSavings: (
+          summary.cost2 -
+          (summary.cost1 + MONTHLY_FIXED_CHARGE)
         ).toFixed(2),
       }))
       .sort((a, b) => a.datetime.localeCompare(b.datetime)); // Sort by month
