@@ -374,9 +374,15 @@ const monthlySavingsChartOptions = ref({
 </script>
 
 <style scoped>
+h2, h3, h4, h5, h6 {
+  padding-top: 0.25rem;
+  margin: 0;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin: 0;
 }
 
 .header-container {
@@ -393,6 +399,7 @@ h1 {
   width: 100px;
   height: auto;
   flex-shrink: 0; 
+  max-width: 20vw;
 }
 
 .title-wrapper {
@@ -403,6 +410,8 @@ h1 {
   flex: 1; 
   margin-right: 175px;
   text-align: center;
+  width: 100%;
+  max-width: calc(100% - 120px);
 }
 
 .title {
@@ -434,11 +443,13 @@ h1 {
     position: static;
     margin-bottom: 1rem;
     width: 80px; /* Adjust as needed */
+    max-width: 30vw;
   }
 
   .title-wrapper {
-    flex: none; /* Resets flex for vertical stacking */
+    flex: none; 
     margin-right: 0;
+    max-width: 100%;
   }
 
   .title {
@@ -452,6 +463,10 @@ h1 {
   .motto {
     font-size: 1em;
     padding: 0 1rem;
+  }
+
+  #app {
+    padding: 1rem; /* Reduce padding on small screens */
   }
 }
 

@@ -28,6 +28,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  width: 100vw; /* Full viewport width */
+  overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 .disclaimer {
@@ -77,6 +79,7 @@ button:focus-visible {
 .charts-container > div {
   margin-bottom: 40px; /* Adds space below each chart */
   margin-top: 20px; /* Adds space above each chart */
+  padding-bottom: 1.5rem;
 }
 
 .card {
@@ -87,8 +90,10 @@ button:focus-visible {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0.25rem 2rem;
+  width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: light) {
@@ -106,8 +111,9 @@ button:focus-visible {
 
 table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 th,
@@ -123,18 +129,19 @@ th {
 
 .charts-container {
   width: 100%;
-  max-width: 1200px;
   display: flex;
   flex-direction: column;
-  gap: 30px; /* Space between charts */
-  margin-top: 20px;
+  gap: 0.5rem; /* Space between charts */
+  max-width: 100%;
+  margin-top: 10px;
 }
 
 .chart-wrapper {
   height: 400px; /* Fixed height to prevent infinite growth */
   width: 100%;
+  max-width: 100%;
   position: relative;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Give charts a defined height */
