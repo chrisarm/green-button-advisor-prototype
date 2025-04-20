@@ -1,0 +1,59 @@
+.help-section {
+  margin-bottom: 15px;
+}
+
+.help-section a {
+  /* Using a color suitable for light backgrounds */
+  color: #0056b3; /* Example: A darker blue for links */
+  text-decoration: none;
+  background-color: #e9ecef; /* Slightly adjusted background */
+  padding: 8px 15px;
+  border-radius: 4px;
+  display: inline-block;
+  transition: background-color 0.2s ease-in-out; /* Added transition */
+}
+
+.help-section a:hover {
+  background-color: #dee2e6; /* Slightly adjusted hover background */
+  color: #003d80; /* Darker blue on hover */
+}
+
+.instructions-panel {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 20px;
+  /* Explicitly set text color for readability on light background */
+  color: #213547; /* Dark text color (matches light theme in style.css) */
+}
+
+.instructions-panel h2 {
+  margin-top: 0;
+  /* Ensure headings inherit or have appropriate color */
+  color: #333; /* Slightly darker heading color */
+}
+
+.instructions-panel h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  /* Ensure headings inherit or have appropriate color */
+  color: #444; /* Slightly darker subheading color */
+}
+
+.instructions-panel ul {
+  margin-bottom: 15px;
+  text-align: left;
+  /* Ensure list items use the panel's text color */
+  /* No specific color needed here if inheriting from .instructions-panel */
+}
+
+/* Optional: Style links specifically inside the instructions panel if needed */
+.instructions-panel a {
+  color: #0056b3; /* Consistent link color */
+  text-decoration: underline; /* Standard link underline */
+}
+
+.instructions-panel a:hover {
+  color: #003d80; /* Darker hover color */
+}
