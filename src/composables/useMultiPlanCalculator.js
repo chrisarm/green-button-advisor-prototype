@@ -360,6 +360,83 @@ export function useMultiPlanCalculator() {
     };
   };
 
+  // Handle manual usage updates
+  const updateMonthlyUsage = (monthUpdate) => {
+    if (!usageData.value.length) return;
+    
+    // Find all data points for this month and update proportionally
+    const monthData = usageData.value.filter(row => row.month_year_key === monthUpdate.month);
+    if (monthData.length === 0) return;
+    
+    const currentTotal = monthData.reduce((sum, row) => sum + row.Consumption, 0);
+    const newTotal = monthUpdate.consumption;
+    const scaleFactor = newTotal / currentTotal;
+    
+    // Update the consumption values proportionally
+    usageData.value.forEach(row => {
+      if (row.month_year_key === monthUpdate.month) {
+        row.Consumption = row.Consumption * scaleFactor;
+        
+        // Recalculate costs with new consumption
+        const plan1Type = selectedPlans.value[0];
+        const plan2Type = selectedPlans.value[1];
+        
+        const rate1Info = calculateRate(plan1Type, row.hour, row.is_weekend, row.season, row.Consumption, newTotal);
+        const rate2Info = calculateRate(plan2Type, row.hour, row.is_weekend, row.season, row.Consumption, newTotal);
+        
+        row.plan1.cost = rate1Info.baseCost;
+        row.plan1.rate = rate1Info.rate;
+        row.plan2.cost = rate2Info.baseCost;
+        row.plan2.rate = rate2Info.rate;
+      }
+    });
+    
+    // Regenerate all comparisons and charts
+    generateComparisons(usageData.value);
+    prepareChartData(usageData.value);
+  };
+  
+  const updatePeriodUsage = (periodUpdate) => {
+    if (!usageData.value.length) return;
+    
+    // Find all data points for this season/period combination
+    const periodData = usageData.value.filter(row => 
+      row.season === periodUpdate.season && row.plan1.period === periodUpdate.period
+    );
+    if (periodData.length === 0) return;
+    
+    const currentTotal = periodData.reduce((sum, row) => sum + row.Consumption, 0);
+    const newTotal = periodUpdate.consumption;
+    const scaleFactor = newTotal / currentTotal;
+    
+    // Update the consumption values proportionally
+    usageData.value.forEach(row => {
+      if (row.season === periodUpdate.season && row.plan1.period === periodUpdate.period) {
+        row.Consumption = row.Consumption * scaleFactor;
+        
+        // Recalculate costs with new consumption
+        const plan1Type = selectedPlans.value[0];
+        const plan2Type = selectedPlans.value[1];
+        
+        // For daily total, we need to recalculate for the entire day
+        const dailyData = usageData.value.filter(r => r.date_key === row.date_key);
+        const dailyTotal = dailyData.reduce((sum, r) => sum + r.Consumption, 0);
+        
+        const rate1Info = calculateRate(plan1Type, row.hour, row.is_weekend, row.season, row.Consumption, dailyTotal);
+        const rate2Info = calculateRate(plan2Type, row.hour, row.is_weekend, row.season, row.Consumption, dailyTotal);
+        
+        row.plan1.cost = rate1Info.baseCost;
+        row.plan1.rate = rate1Info.rate;
+        row.plan2.cost = rate2Info.baseCost;
+        row.plan2.rate = rate2Info.rate;
+      }
+    });
+    
+    // Regenerate all comparisons and charts
+    generateComparisons(usageData.value);
+    prepareChartData(usageData.value);
+  };
+
   return {
     // Data
     usageData,
@@ -375,6 +452,8 @@ export function useMultiPlanCalculator() {
     processData,
     setSelectedPlans,
     getSelectablePlans,
-    resetState
+    resetState,
+    updateMonthlyUsage,
+    updatePeriodUsage
   };
 }

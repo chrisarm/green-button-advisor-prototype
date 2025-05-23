@@ -62,10 +62,21 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(period, index) in periodComparisons" :key="index">
+            <tr v-for="(period, index) in editablePeriodData" :key="index">
               <td>{{ period.season }}</td>
               <td>{{ period.period }}</td>
-              <td>{{ period.consumption }}</td>
+              <td>
+                <input 
+                  type="number" 
+                  :value="period.consumption"
+                  @blur="updatePeriodUsage(index, $event.target.value)"
+                  @keyup.enter="updatePeriodUsage(index, $event.target.value)"
+                  class="editable-input"
+                  min="0"
+                  step="0.01"
+                  title="Click to edit usage"
+                />
+              </td>
               <td>${{ period.plan1Cost }}</td>
               <td>${{ period.plan2Cost }}</td>
               <td :class="getDifferenceClass(period.costDifference)">
@@ -115,9 +126,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(month, index) in monthlyComparisons" :key="index">
+            <tr v-for="(month, index) in editableMonthlyData" :key="index">
               <td>{{ formatMonth(month.month) }}</td>
-              <td>{{ month.consumption }}</td>
+              <td>
+                <input 
+                  type="number" 
+                  :value="month.consumption"
+                  @blur="updateMonthlyUsage(index, $event.target.value)"
+                  @keyup.enter="updateMonthlyUsage(index, $event.target.value)"
+                  class="editable-input"
+                  min="0"
+                  step="0.01"
+                  title="Click to edit usage"
+                />
+              </td>
               <td>${{ month.plan1TotalCost }}</td>
               <td>${{ month.plan2TotalCost }}</td>
               <td :class="getDifferenceClass(month.monthlySavings)">
@@ -142,6 +164,56 @@ const props = defineProps({
   monthlyComparisons: Array,
   chartData: Object
 })
+
+const emit = defineEmits(['update-monthly-usage', 'update-period-usage'])
+
+// Local refs for editable data
+const editableMonthlyData = ref([])
+const editablePeriodData = ref([])
+
+// Watch for prop changes and update local editable data
+watch(() => props.monthlyComparisons, (newData) => {
+  if (newData) {
+    editableMonthlyData.value = newData.map(month => ({
+      ...month,
+      consumption: parseFloat(month.consumption)
+    }))
+  }
+}, { immediate: true })
+
+watch(() => props.periodComparisons, (newData) => {
+  if (newData) {
+    editablePeriodData.value = newData.map(period => ({
+      ...period,
+      consumption: parseFloat(period.consumption)
+    }))
+  }
+}, { immediate: true })
+
+// Handle monthly usage updates
+const updateMonthlyUsage = (index, newValue) => {
+  const numValue = parseFloat(newValue)
+  if (!isNaN(numValue) && numValue >= 0) {
+    editableMonthlyData.value[index].consumption = numValue
+    emit('update-monthly-usage', {
+      month: editableMonthlyData.value[index].month,
+      consumption: numValue
+    })
+  }
+}
+
+// Handle period usage updates
+const updatePeriodUsage = (index, newValue) => {
+  const numValue = parseFloat(newValue)
+  if (!isNaN(numValue) && numValue >= 0) {
+    editablePeriodData.value[index].consumption = numValue
+    emit('update-period-usage', {
+      season: editablePeriodData.value[index].season,
+      period: editablePeriodData.value[index].period,
+      consumption: numValue
+    })
+  }
+}
 
 const savingsClass = computed(() => {
   if (!props.overallComparison) return ''
@@ -305,7 +377,7 @@ const savingsChartOptions = computed(() => ({
 }
 
 .plan-left .plan-position-label {
-  background: linear-gradient(135deg, #4CAF50, #45a049);
+  background: linear-gradient(135deg, var(--success-color), #45a049);
   color: white;
 }
 
@@ -315,9 +387,24 @@ const savingsChartOptions = computed(() => ({
 }
 
 .summary-card.comparison {
-  background: linear-gradient(135deg, #2a2a3a, #1a1a1a);
-  border-color: #646cff;
+  border-color: var(--link-color) !important;
   max-width: 200px;
+  box-shadow: 0 4px 8px rgba(100, 108, 255, 0.2);
+}
+
+/* Light theme comparison card */
+:root[data-theme="light"] .summary-card.comparison {
+  background: linear-gradient(135deg, #f0f4ff, #e8f0ff) !important;
+}
+
+/* Dark theme comparison card */
+:root[data-theme="dark"] .summary-card.comparison {
+  background: linear-gradient(135deg, var(--button-bg), var(--input-bg)) !important;
+}
+
+/* Fallback for no theme specified */
+.summary-card.comparison {
+  background: var(--button-bg) !important;
 }
 
 .vs {
@@ -346,20 +433,21 @@ const savingsChartOptions = computed(() => ({
 }
 
 .positive {
-  color: #4CAF50;
+  color: var(--success-color);
 }
 
 .negative {
-  color: #F44336;
+  color: var(--error-color);
 }
 
 .neutral {
-  color: #ccc;
+  color: var(--text-color);
+  opacity: 0.6;
 }
 
 .analysis-period {
   background: rgba(100, 108, 255, 0.1);
-  border: 1px solid #646cff;
+  border: 1px solid var(--link-color);
   border-radius: 8px;
   padding: 15px;
   margin: 20px 0;
@@ -409,6 +497,10 @@ tr:hover {
   background: rgba(100, 108, 255, 0.05);
 }
 
+[data-theme="dark"] tr:hover {
+  background: rgba(100, 108, 255, 0.1);
+}
+
 .charts-section {
   margin: 40px 0;
 }
@@ -434,6 +526,29 @@ tr:hover {
   color: var(--link-color);
 }
 
+
+/* Editable input styling */
+.editable-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-color);
+  padding: 4px 8px;
+  width: 100%;
+  max-width: 120px;
+  font-size: 0.9em;
+  transition: border-color 0.2s ease;
+}
+
+.editable-input:focus {
+  outline: none;
+  border-color: var(--link-color);
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
+}
+
+.editable-input:hover {
+  border-color: var(--link-color);
+}
 
 /* Mobile responsive */
 @media (max-width: 768px) {
