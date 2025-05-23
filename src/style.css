@@ -3,23 +3,58 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root[data-theme="light"] {
+  --text-color: #213547;
+  --bg-color: #ffffff;
+  --link-color: #646cff;
+  --link-hover-color: #747bff;
+  --button-bg: #f9f9f9;
+  --button-bg-primary: #4caf50;
+  --button-bg-primary-hover: #3e8e41;
+  --border-color: #ddd;
+  --input-bg: #ffffff;
+  --title-color: #106632ff;
+  --chart-text-color: #333333;
+  --chart-grid-color: rgba(0, 0, 0, 0.1);
+  --success-color: #2E7D32;
+  --error-color: #C62828;
+}
+
+:root[data-theme="dark"] {
+  --text-color: rgba(255, 255, 255, 0.87);
+  --bg-color: #242424;
+  --link-color: #646cff;
+  --link-hover-color: #535bf2;
+  --button-bg: #1a1a1a;
+  --button-bg-primary: #4caf50;
+  --button-bg-primary-hover: #3e8e41;
+  --border-color: #555;
+  --input-bg: #2a2a2a;
+  --title-color: #4ade80;
+  --chart-text-color: #ffffff;
+  --chart-grid-color: rgba(255, 255, 255, 0.2);
+  --success-color: #4CAF50;
+  --error-color: #F44336;
+}
+
+:root {
+  color: var(--text-color);
+  background-color: var(--bg-color);
+}
+
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--link-color);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--link-hover-color);
 }
 
 body {
@@ -43,13 +78,14 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--button-bg);
+  color: var(--text-color);
   cursor: pointer;
   transition: border-color 0.25s;
   margin: 5px;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--link-color);
 }
 button:focus,
 button:focus-visible {
@@ -61,7 +97,7 @@ button:focus-visible {
 }
 
 .sample-data-btn {
-  background-color: #4caf50;
+  background-color: var(--button-bg-primary);
   color: white;
   border: none;
   padding: 10px 15px;
@@ -73,7 +109,7 @@ button:focus-visible {
 }
 
 .sample-data-btn:hover {
-  background-color: #3e8e41;
+  background-color: var(--button-bg-primary-hover);
 }
 
 .charts-container > div {
@@ -96,18 +132,6 @@ button:focus-visible {
   box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
 
 table {
   width: 100%;
@@ -118,7 +142,7 @@ table {
 
 th,
 td {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 8px;
   text-align: left;
 }

@@ -11,45 +11,25 @@
       <div class="title-wrapper">
         <h1 class="title">GreenButton Advisor</h1>
       </div>
+      <ThemeToggle />
     </div>
     <h2 class="subtitle">Let's make the world a bit greener</h2>
     <p class="motto">We'll start by saving you some green by finding the best SDGE electrical plan for you.</p>
     <hr/>
     <!-- Plans Screen -->
     <div v-if="currentPage === 'plans'">
-      <h2>SDGE Electric Plan Comparison</h2>
-      <p>Select Two (2) Plans below to compare the price difference for your usage.</p> 
-      <div class="plans-container">
-        <div class="plan selected">
-          <h3>TOU-DR-1</h3>
-          <p>Time-of-Use plan with different rates for peak and off-peak hours.</p>
-        </div>
-        <div class="plan selected">
-          <h3>EV-TOU-5</h3>
-          <p>For EV owners who can charge overnight — very low overnight costs</p>
-        </div>
-        <div class="plan disabled">
-          <h3>TOU-DR-2</h3>
-          <p>More consistent pricing with two simple pricing periods</p>
-        </div>
-        <div class="plan disabled">
-          <h3>TOU-DR-P</h3>
-          <p>Like TOU-DR1, but with potential added savings on statewide conservation days</p>
-	</div>
-        <div class="plan disabled">
-          <h3>DR-SES</h3>
-          <p>Solar Energy - You could earn credits on your bill by sending excess energy back to the grid</p>
-        </div>
-      </div>
-      <button @click="goToMain" class="sample-data-btn">Next</button>
-      <p>You'll be able to get personalized advice on how to save money and energy on the next screen.</p>
+      <PlanSelector 
+        :available-plans="getSelectablePlans()"
+        @plan-toggled="handlePlanToggle"
+        @plans-selected="goToMain"
+      />
     </div>
 
     <!-- Current App Content -->
     <div v-else>
 
-      <div v-if="!overallSummary && !processing">
-        <h3>Compare the selected plans (TOU-DR-1 and EV-TOU-5) and see each plan's costs for your usage</h3>
+      <div v-if="!overallComparison && !processing">
+        <h3>Compare {{ selectedPlansText }} and see each plan's costs for your usage</h3>
 	<p>When you are ready to see the estimated cost difference for your home upload your GreenButton data.</p>
         <FileUpload @file-parsed="handleUploadData" />
         <div class="help-section">
@@ -65,7 +45,7 @@
         <p>Processing...</p>
       </div>
 
-      <div v-if="showInstructions && !overallSummary" class="instructions-panel">
+      <div v-if="showInstructions && !overallComparison" class="instructions-panel">
         <h2>How-To Get Your GreenButton Data</h2>
         <h3>Step 1: Access Your SDGE Account</h3>
         <ul>
@@ -98,90 +78,13 @@
         <p style="color: red;">Error: {{ error }}</p>
       </div>
 
-      <div v-if="overallSummary && !processing && !error">
-        <!-- Summary Estimate Section -->
-        <h2>Summary Estimate</h2>
-        <p>This shows the estimated difference between the TOU-DR-1 and the EV-TOU-5 SDGE plans.</p>
-        <table>
-          <tbody>
-            <tr v-for="(value, key) in overallSummary" :key="key">
-              <td>{{ key }}</td>
-              <td>{{ value }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Usage by Season and Period Section -->
-        <h2>Usage by Season and Period</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Season</th>
-              <th>Rate Tier</th>
-              <th>Total kWh</th>
-              <th>TOU-DR-1 ($/kWh)</th>
-              <th>EV-TOU-5* ($/kWh)</th>
-              <th>Estimated Difference ($)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, index) in periodSummary" :key="index">
-              <td>{{ row.season }}</td>
-              <td>{{ row.rate_tier1 }}</td>
-              <td>{{ row.Consumption }}</td>
-              <td>${{ row.avg_rate2 }}</td>
-              <td>${{ row.avg_rate1 }}</td>
-              <td>${{ row.costSavings }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p>*Differences in table are less than they appear, this doesn't account for the fixed monthly fee on EV-TOU-5</p>
-
-        <!-- Visualizations Section -->
-        <h2>Visualizations</h2>
-        <div class="charts-container">
-          <div v-if="chartData.dailyUsage && chartData.dailyUsage.datasets.length > 0" class="chart-wrapper">
-            <h3>Daily Usage by Rate Period</h3>
-            <BarChart :data="chartData.dailyUsage" :options="dailyChartOptions" />
-          </div>
-          <div v-else>
-            <p>No daily usage data to display.</p>
-          </div>
-        </div>
-
-        <!-- Monthly Savings Section -->
-        <div v-if="chartData.monthlyCost && chartData.monthlyCost.datasets.length > 0">
-          <h2>Potential Monthly Savings</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Total kWh</th>
-                <th>Monthly Difference ($)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, index) in monthlySummary" :key="index">
-                <td>{{ row.datetime }}</td>
-                <td>{{ row.Consumption }}</td>
-                <td>${{ row.total }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="charts-container">
-            <div class="chart-wrapper">
-              <h3>Monthly Plan Cost</h3>
-              <BarChart :data="chartData.monthlyCost" :options="monthlyChartOptions" />
-            </div>
-	    <div class="chart-wrapper">
-              <h3>Monthly Savings</h3>
-              <BarChart :data="chartData.monthlySavings" :options="monthlySavingsChartOptions" />
-            </div>
-          </div>
-        </div>
-        <div v-else-if="!processing && overallSummary">
-          <p>No monthly cost data to display.</p>
-        </div>
+      <div v-if="overallComparison && !processing && !error">
+        <ComparisonResults 
+          :overall-comparison="overallComparison"
+          :period-comparisons="periodComparisons"
+          :monthly-comparisons="monthlyComparisons"
+          :chart-data="chartData"
+        />
       </div>
 
       <button @click="goToPlans" class="sample-data-btn">Back</button>
@@ -208,9 +111,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import FileUpload from './components/FileUpload.vue';
-import { useEnergyCalculator } from './composables/useEnergyCalculator.js';
+import PlanSelector from './components/PlanSelector.vue';
+import ComparisonResults from './components/ComparisonResults.vue';
+import ThemeToggle from './components/ThemeToggle.vue';
+import { useMultiPlanCalculator } from './composables/useMultiPlanCalculator.js';
 import { Bar as BarChart } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale } from 'chart.js';
 import { parseGreenButtonCsv } from './utils/csvParser';
@@ -224,16 +130,19 @@ const currentPage = ref('plans'); // Start on the plans screen
 const showInstructions = ref(false);
 const logoError = ref(false);
 
-// Energy calculator composable
+// Multi-plan calculator composable
 const {
   processData,
   processing,
   error,
-  overallSummary,
-  periodSummary,
-  monthlySummary,
-  chartData
-} = useEnergyCalculator();
+  selectedPlans,
+  overallComparison,
+  periodComparisons,
+  monthlyComparisons,
+  chartData,
+  setSelectedPlans,
+  getSelectablePlans
+} = useMultiPlanCalculator();
 
 // Function to navigate to the main app
 const goToMain = () => {
@@ -249,6 +158,46 @@ const goToPlans = () => {
 const startOver = () => {
   window.location.reload();
 };
+
+// Handle plan selection toggle
+const handlePlanToggle = (planType) => {
+  const currentSelected = selectedPlans.value;
+  const isSelected = currentSelected.includes(planType);
+  
+  if (isSelected) {
+    // Remove from selection
+    const newSelection = currentSelected.filter(p => p !== planType);
+    if (newSelection.length === 2) {
+      setSelectedPlans(newSelection);
+    } else if (newSelection.length === 1) {
+      // Only one plan left selected - keep it selected but don't force a second plan
+      setSelectedPlans([newSelection[0]]);
+    } else {
+      // No plans selected - reset to empty selection
+      setSelectedPlans([]);
+    }
+  } else {
+    // Add to selection
+    if (currentSelected.length === 0) {
+      // First plan selected
+      setSelectedPlans([planType]);
+    } else if (currentSelected.length === 1) {
+      // Second plan selected - now we have a valid comparison
+      setSelectedPlans([...currentSelected, planType]);
+    } else {
+      // Already have 2 plans - replace the first one with the new selection
+      setSelectedPlans([planType, currentSelected[1]]);
+    }
+  }
+};
+
+// Computed property for selected plans text
+const selectedPlansText = computed(() => {
+  if (selectedPlans.value.length === 2) {
+    return `the selected plans (${selectedPlans.value[0]} and ${selectedPlans.value[1]})`;
+  }
+  return 'your selected plans';
+});
 
 // Load sample data
 const loadSampleData = async () => {
@@ -275,102 +224,6 @@ const handleUploadData = (parsedData) => {
   processData(parsedData);
 };
 
-// Chart options
-const dailyChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-
-  scales: {
-    x: {
-      stacked: true,
-      title: { display: true, text: 'Date', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      }
-
-    },
-    y: {
-      stacked: true,
-      title: { display: true, text: 'kWh', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      },
-      grid: {
-        color: 'rgba(255, 255, 255, 0.2)'  // Light gray grid lines
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      labels: {
-        color: 'white'  // Legend labels
-      }
-    }
-  }
-});
-
-
-const monthlyChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      stacked: false,
-      title: { display: true, text: 'Month', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      }
-    },
-    y: {
-      stacked: false,
-      title: { display: true, text: 'Cost ($)', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      },
-      grid: {
-        color: 'rgba(255, 255, 255, 0.2)'  // Light gray grid lines
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      labels: {
-        color: 'white'  // Legend labels
-      }
-    }
-  }
-});
-
-const monthlySavingsChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      stacked: false,
-      title: { display: true, text: 'Month', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      }
-    },
-    y: {
-      stacked: false,
-      title: { display: true, text: 'Savings ($)', color: 'white' },
-      ticks: {
-        color: 'white'  // Y-axis tick labels (e.g., values)
-      },
-      grid: {
-        color: 'rgba(255, 255, 255, 0.2)'  // Light gray grid lines
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      labels: {
-        color: 'white'  // Legend labels
-      }
-    }
-  }
-});
 </script>
 
 <style scoped>
@@ -393,6 +246,7 @@ h1 {
   max-width: 1280px; 
   margin: 0 auto;
   min-height: 120px;
+  position: relative;
 }
 
 .site-logo {
@@ -408,17 +262,15 @@ h1 {
   align-items: center; 
   justify-content: center; 
   flex: 1; 
-  margin-right: 175px;
   text-align: center;
   width: 100%;
-  max-width: calc(100% - 120px);
 }
 
 .title {
   font-size: 2.5em;
   margin: 0;
   line-height: 1.2;
-  color: #106632ff;
+  color: var(--title-color);
 }
 
 .subtitle {
@@ -470,74 +322,6 @@ h1 {
   }
 }
 
-.plans-container {
-  display: flex;
-  flex-direction: row;
-  gap: 30px; /* Matches charts-container gap */
-  justify-content: center;
-  margin: 20px 0; /* Matches charts-container margin-top */
-  flex-wrap: wrap; /* Allows stacking on smaller screens */
-}
-
-.plan {
-  flex: 1;
-  min-width: 250px; /* Ensures readability on smaller screens */
-  max-width: 400px; /* Prevents overly wide cards */
-  padding: 2em; /* Matches .card padding */
-  border: 1px solid #ddd; /* Matches table border */
-  border-radius: 8px; /* Matches button border-radius */
-  background-color: #1a1a1a; /* Matches button background in dark mode */
-  text-align: left; /* Matches disclaimer text-align */
-  transition: border-color 0.25s, background-color 0.25s; /* Matches button transition */
-}
-
-.plan.selected {
-  border-color: #646cff; /* Matches link color for emphasis */
-  background-color: #2a2a3a; /* Slightly lighter than #1a1a1a for contrast */
-  position: relative; /* For potential pseudo-elements like checkmarks */
-}
-
-.plan.selected::after {
-  content: '✔';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  color: #646cff; /* Matches selected border */
-  font-size: 1.2em;
-}
-
-.plan.disabled {
-  opacity: 0.5; /* Reduced opacity for disabled look */
-  background-color: #333; /* Darker gray to indicate inactivity */
-  cursor: not-allowed; /* Indicates non-interactable */
-  border-color: #555; /* Muted border color */
-}
-
-@media (prefers-color-scheme: light) {
-  .plan {
-    background-color: #f9f9f9; /* Matches button background in light mode */
-  }
-  .plan.selected {
-    background-color: #e6e6ff; /* Light purple tint for selection */
-    border-color: #535bf2; /* Matches link hover color */
-  }
-  .plan.selected::after {
-    color: #535bf2; /* Matches selected border in light mode */
-  }
-  .plan.disabled {
-    background-color: #ccc; /* Light gray for disabled in light mode */
-    border-color: #999; /* Muted border color */
-  }
-}
-
-.plan h3 {
-  font-size: 1.5em; /* Slightly smaller than h2, consistent with table th */
-  margin-top: 0;
-}
-
-.plan p {
-  margin: 0.5em 0 0; /* Tight spacing for content */
-}
 
 button {
   /* Inherits global button styles from :root */
