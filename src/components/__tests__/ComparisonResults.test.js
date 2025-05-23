@@ -55,9 +55,13 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
-    expect(resetButton.exists()).toBe(true)
-    expect(resetButton.text()).toContain('Reset to Original Usage')
+    const resetButtonPeriod = wrapper.find('[data-testid="reset-usage-button-period"]')
+    const resetButtonMonthly = wrapper.find('[data-testid="reset-usage-button-monthly"]')
+    
+    expect(resetButtonPeriod.exists()).toBe(true)
+    expect(resetButtonMonthly.exists()).toBe(true)
+    expect(resetButtonPeriod.text()).toContain('Reset Usage')
+    expect(resetButtonMonthly.text()).toContain('Reset Usage')
   })
 
   it('should not render reset button when data has not been modified', () => {
@@ -68,8 +72,11 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
-    expect(resetButton.exists()).toBe(false)
+    const resetButtonPeriod = wrapper.find('[data-testid="reset-usage-button-period"]')
+    const resetButtonMonthly = wrapper.find('[data-testid="reset-usage-button-monthly"]')
+    
+    expect(resetButtonPeriod.exists()).toBe(false)
+    expect(resetButtonMonthly.exists()).toBe(false)
   })
 
   it('should emit reset-usage event when reset button is clicked', async () => {
@@ -83,7 +90,7 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
+    const resetButton = wrapper.find('[data-testid="reset-usage-button-period"]')
     await resetButton.trigger('click')
 
     expect(wrapper.emitted('reset-usage')).toBeTruthy()
@@ -103,7 +110,7 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
+    const resetButton = wrapper.find('[data-testid="reset-usage-button-monthly"]')
     await resetButton.trigger('click')
 
     expect(confirmSpy).toHaveBeenCalledWith(
@@ -124,7 +131,7 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
+    const resetButton = wrapper.find('[data-testid="reset-usage-button-period"]')
     await resetButton.trigger('click')
 
     expect(wrapper.emitted('reset-usage')).toBeFalsy()
@@ -140,7 +147,37 @@ describe('ComparisonResults Reset Functionality', () => {
       }
     })
 
-    const resetButton = wrapper.find('[data-testid="reset-usage-button"]')
-    expect(resetButton.classes()).toContain('reset-button')
+    const resetButton = wrapper.find('[data-testid="reset-usage-button-period"]')
+    expect(resetButton.classes()).toContain('reset-button-small')
+  })
+
+  it('should show updating indicator when updating is true', () => {
+    const wrapper = mount(ComparisonResults, {
+      props: {
+        ...mockProps,
+        updating: true
+      }
+    })
+
+    const updatingOverlay = wrapper.find('.updating-overlay')
+    const updatingMessage = wrapper.find('.updating-message')
+    const spinner = wrapper.find('.spinner')
+    
+    expect(updatingOverlay.exists()).toBe(true)
+    expect(updatingMessage.exists()).toBe(true)
+    expect(spinner.exists()).toBe(true)
+    expect(updatingMessage.text()).toContain('Updating charts and calculations')
+  })
+
+  it('should not show updating indicator when updating is false', () => {
+    const wrapper = mount(ComparisonResults, {
+      props: {
+        ...mockProps,
+        updating: false
+      }
+    })
+
+    const updatingOverlay = wrapper.find('.updating-overlay')
+    expect(updatingOverlay.exists()).toBe(false)
   })
 })

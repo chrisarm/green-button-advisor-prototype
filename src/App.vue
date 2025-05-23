@@ -85,6 +85,7 @@
           :monthly-comparisons="monthlyComparisons"
           :chart-data="chartData"
           :has-data-been-modified="hasDataBeenModified"
+          :updating="updating"
           @update-monthly-usage="updateMonthlyUsage"
           @update-period-usage="updatePeriodUsage"
           @reset-usage="resetUsageToOriginal"
@@ -149,7 +150,8 @@ const {
   updateMonthlyUsage,
   updatePeriodUsage,
   resetUsageToOriginal,
-  hasDataBeenModified
+  hasDataBeenModified,
+  updating
 } = useMultiPlanCalculator();
 
 // Function to navigate to the main app

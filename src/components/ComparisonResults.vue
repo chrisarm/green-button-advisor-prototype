@@ -1,5 +1,12 @@
 <template>
   <div class="comparison-results">
+    <!-- Updating Indicator -->
+    <div v-if="updating" class="updating-overlay">
+      <div class="updating-message">
+        <div class="spinner"></div>
+        <p>Updating charts and calculations...</p>
+      </div>
+    </div>
     <!-- Summary Section -->
     <div v-if="overallComparison" class="summary-section">
       <h2>Plan Comparison Summary</h2>
@@ -48,7 +55,18 @@
 
     <!-- Period Breakdown -->
     <div v-if="periodComparisons.length > 0" class="period-section">
-      <h2>Usage by Season and Rate Period</h2>
+      <div class="section-header">
+        <h2>Usage by Season and Rate Period</h2>
+        <button 
+          v-if="hasDataBeenModified"
+          @click="handleResetUsage" 
+          class="reset-button-small"
+          data-testid="reset-usage-button-period"
+          title="Reset all usage values to original data"
+        >
+          🔄 Reset Usage
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -111,22 +129,20 @@
       </div>
     </div>
 
-    <!-- Reset Button -->
-    <div v-if="hasDataBeenModified" class="reset-section">
-      <button 
-        @click="handleResetUsage" 
-        class="reset-button"
-        data-testid="reset-usage-button"
-        title="Reset all usage values to original data"
-      >
-        🔄 Reset to Original Usage
-      </button>
-      <p class="reset-help">Click to undo all your edits and restore the original usage data.</p>
-    </div>
-
     <!-- Monthly Details -->
     <div v-if="monthlyComparisons.length > 0" class="monthly-section">
-      <h2>Monthly Breakdown</h2>
+      <div class="section-header">
+        <h2>Monthly Breakdown</h2>
+        <button 
+          v-if="hasDataBeenModified"
+          @click="handleResetUsage" 
+          class="reset-button-small"
+          data-testid="reset-usage-button-monthly"
+          title="Reset all usage values to original data"
+        >
+          🔄 Reset Usage
+        </button>
+      </div>
       <div class="table-container">
         <table>
           <thead>
@@ -179,6 +195,10 @@ const props = defineProps({
   hasDataBeenModified: {
     type: Boolean,
     default: false
+  },
+  updating: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -197,6 +217,7 @@ watch(() => props.monthlyComparisons, (newData) => {
     }))
   }
 }, { immediate: true })
+
 
 watch(() => props.periodComparisons, (newData) => {
   if (newData) {
@@ -577,45 +598,91 @@ tr:hover {
   border-color: var(--link-color);
 }
 
-/* Reset section styling */
-.reset-section {
-  margin: 30px 0;
-  text-align: center;
-  padding: 20px;
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid var(--link-color);
-  border-radius: 8px;
+/* Section header with reset button */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.reset-button {
+.section-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.reset-button-small {
   background: linear-gradient(135deg, #ff9800, #f57c00);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 1rem;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
+  white-space: nowrap;
 }
 
-.reset-button:hover {
+.reset-button-small:hover {
   background: linear-gradient(135deg, #f57c00, #ef6c00);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
 }
 
-.reset-button:active {
+.reset-button-small:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
 }
 
-.reset-help {
-  margin: 10px 0 0 0;
-  font-size: 0.9em;
+/* Updating overlay */
+.updating-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.updating-message {
+  background: var(--button-bg);
+  border: 2px solid var(--link-color);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: 300px;
+}
+
+.updating-message p {
+  margin: 15px 0 0 0;
   color: var(--text-color);
-  opacity: 0.7;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--link-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Mobile responsive */
@@ -646,14 +713,30 @@ tr:hover {
     padding: 8px 10px;
   }
   
-  .reset-section {
-    padding: 15px;
-    margin: 20px 0;
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
   
-  .reset-button {
-    padding: 10px 20px;
-    font-size: 0.9rem;
+  .reset-button-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    align-self: flex-end;
+  }
+  
+  .updating-message {
+    padding: 20px;
+    max-width: 250px;
+  }
+  
+  .updating-message p {
+    font-size: 1em;
+  }
+  
+  .spinner {
+    width: 30px;
+    height: 30px;
   }
 }
 </style>

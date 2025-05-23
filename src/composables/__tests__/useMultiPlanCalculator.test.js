@@ -252,7 +252,7 @@ describe('useMultiPlanCalculator', () => {
       expect(calculator.originalUsageData.value.length).toBe(3)
     })
 
-    it('should restore original consumption values when reset', () => {
+    it('should restore original consumption values when reset', async () => {
       // Process initial data
       calculator.processData(sampleData)
       
@@ -262,7 +262,7 @@ describe('useMultiPlanCalculator', () => {
       )
       
       // Modify some usage data
-      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
       
       // Verify data was modified
       const modifiedTotalConsumption = calculator.usageData.value.reduce(
@@ -271,7 +271,7 @@ describe('useMultiPlanCalculator', () => {
       expect(modifiedTotalConsumption).not.toBeCloseTo(originalTotalConsumption)
       
       // Reset to original
-      calculator.resetUsageToOriginal()
+      await calculator.resetUsageToOriginal()
       
       // Verify data was restored
       const restoredTotalConsumption = calculator.usageData.value.reduce(
@@ -280,7 +280,7 @@ describe('useMultiPlanCalculator', () => {
       expect(restoredTotalConsumption).toBeCloseTo(originalTotalConsumption, 2)
     })
 
-    it('should recalculate all comparisons and charts after reset', () => {
+    it('should recalculate all comparisons and charts after reset', async () => {
       // Process initial data
       calculator.processData(sampleData)
       
@@ -289,7 +289,7 @@ describe('useMultiPlanCalculator', () => {
       const originalPlan2Cost = parseFloat(calculator.overallComparison.value.plan2.totalCost)
       
       // Modify usage data
-      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
       
       // Verify costs changed
       const modifiedPlan1Cost = parseFloat(calculator.overallComparison.value.plan1.totalCost)
@@ -298,7 +298,7 @@ describe('useMultiPlanCalculator', () => {
       expect(modifiedPlan2Cost).not.toBeCloseTo(originalPlan2Cost)
       
       // Reset to original
-      calculator.resetUsageToOriginal()
+      await calculator.resetUsageToOriginal()
       
       // Verify costs were restored
       const restoredPlan1Cost = parseFloat(calculator.overallComparison.value.plan1.totalCost)
@@ -316,7 +316,7 @@ describe('useMultiPlanCalculator', () => {
       expect(calculator.overallComparison.value).toBe(null)
     })
 
-    it('should preserve original data after multiple edits and resets', () => {
+    it('should preserve original data after multiple edits and resets', async () => {
       // Process initial data
       calculator.processData(sampleData)
       
@@ -325,17 +325,22 @@ describe('useMultiPlanCalculator', () => {
       )
       
       // Make multiple edits
-      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 50 })
-      calculator.updatePeriodUsage({ season: 'summer', period: 'Off-Peak', consumption: 25 })
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 50 })
+      
+      const firstRowPeriod = calculator.usageData.value[0]?.plan1?.period
+      const firstRowSeason = calculator.usageData.value[0]?.season
+      if (firstRowPeriod && firstRowSeason) {
+        await calculator.updatePeriodUsage({ season: firstRowSeason, period: firstRowPeriod, consumption: 25 })
+      }
       
       // Reset
-      calculator.resetUsageToOriginal()
+      await calculator.resetUsageToOriginal()
       
       // Make more edits
-      calculator.updateMonthlyUsage({ month: '2024-07', consumption: 75 })
+      await calculator.updateMonthlyUsage({ month: '2024-07', consumption: 75 })
       
       // Reset again
-      calculator.resetUsageToOriginal()
+      await calculator.resetUsageToOriginal()
       
       // Should still match original
       const finalTotalConsumption = calculator.usageData.value.reduce(
@@ -359,9 +364,9 @@ describe('useMultiPlanCalculator', () => {
       expect(calculator.hasDataBeenModified.value).toBe(false)
     })
 
-    it('should return true when monthly usage has been modified', () => {
+    it('should return true when monthly usage has been modified', async () => {
       calculator.processData(sampleData)
-      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
       expect(calculator.hasDataBeenModified.value).toBe(true)
     })
 
@@ -388,13 +393,223 @@ describe('useMultiPlanCalculator', () => {
       }
     })
 
-    it('should return false after reset to original', () => {
+    it('should return false after reset to original', async () => {
       calculator.processData(sampleData)
-      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
       expect(calculator.hasDataBeenModified.value).toBe(true)
       
-      calculator.resetUsageToOriginal()
+      await calculator.resetUsageToOriginal()
       expect(calculator.hasDataBeenModified.value).toBe(false)
+    })
+  })
+
+  describe('updating state', () => {
+    const sampleData = [
+      {
+        "Date": "6/1/2024",
+        "Start Time": "12:00 AM", 
+        "Consumption": "1.5"
+      }
+    ]
+
+    it('should start with updating false', () => {
+      expect(calculator.updating.value).toBe(false)
+    })
+
+    it('should set updating to true during monthly usage update then false when done', async () => {
+      calculator.processData(sampleData)
+      
+      // Initially false
+      expect(calculator.updating.value).toBe(false)
+      
+      // Start update (don't await yet)
+      const updatePromise = calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      
+      // Should be true immediately after starting
+      expect(calculator.updating.value).toBe(true)
+      
+      // Wait for completion
+      await updatePromise
+      
+      // Should be false after completion
+      expect(calculator.updating.value).toBe(false)
+    })
+
+    it('should set updating to true during period usage update then false when done', async () => {
+      calculator.processData(sampleData)
+      
+      // Get actual period from processed data
+      const firstRowPeriod = calculator.usageData.value[0]?.plan1?.period
+      const firstRowSeason = calculator.usageData.value[0]?.season
+      
+      expect(calculator.updating.value).toBe(false)
+      
+      if (firstRowPeriod && firstRowSeason) {
+        // Start update (don't await yet)
+        const updatePromise = calculator.updatePeriodUsage({ 
+          season: firstRowSeason, 
+          period: firstRowPeriod, 
+          consumption: 50 
+        })
+        
+        // Should be true immediately after starting
+        expect(calculator.updating.value).toBe(true)
+        
+        // Wait for completion
+        await updatePromise
+        
+        // Should be false after completion
+        expect(calculator.updating.value).toBe(false)
+      }
+    })
+
+    it('should set updating to true during reset then false when done', async () => {
+      calculator.processData(sampleData)
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      
+      expect(calculator.updating.value).toBe(false)
+      
+      // Start reset (don't await yet)
+      const resetPromise = calculator.resetUsageToOriginal()
+      
+      // Should be true immediately after starting
+      expect(calculator.updating.value).toBe(true)
+      
+      // Wait for completion
+      await resetPromise
+      
+      // Should be false after completion
+      expect(calculator.updating.value).toBe(false)
+    })
+  })
+
+  describe('chart data preservation after reset', () => {
+    const sampleData = [
+      {
+        "Date": "6/1/2024",
+        "Start Time": "12:00 AM", 
+        "Consumption": "1.5"
+      },
+      {
+        "Date": "6/1/2024",
+        "Start Time": "1:00 AM", 
+        "Consumption": "2.0"
+      },
+      {
+        "Date": "6/2/2024",
+        "Start Time": "12:00 AM", 
+        "Consumption": "1.8"
+      }
+    ]
+
+    it('should preserve Date objects in usageData after reset', async () => {
+      calculator.processData(sampleData)
+      
+      // Verify original data has proper Date objects
+      const originalFirstRow = calculator.usageData.value[0]
+      expect(originalFirstRow.datetime).toBeInstanceOf(Date)
+      expect(originalFirstRow.datetime.getTime()).toBeGreaterThan(0)
+      
+      // Modify data
+      await calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      
+      // Reset
+      await calculator.resetUsageToOriginal()
+      
+      // Verify Date objects are still preserved after reset
+      const restoredFirstRow = calculator.usageData.value[0]
+      expect(restoredFirstRow.datetime).toBeInstanceOf(Date)
+      expect(restoredFirstRow.datetime.getTime()).toBeGreaterThan(0)
+      expect(restoredFirstRow.datetime.getTime()).toBe(originalFirstRow.datetime.getTime())
+    })
+
+    it('should preserve chart data structure after reset', () => {
+      calculator.processData(sampleData)
+      
+      // Store original chart data
+      const originalChartLabels = [...calculator.chartData.value.dailyUsage.labels]
+      const originalChartDatasets = calculator.chartData.value.dailyUsage.datasets.map(ds => ({ 
+        label: ds.label, 
+        dataLength: ds.data.length 
+      }))
+      
+      // Verify we have chart data initially
+      expect(originalChartLabels.length).toBeGreaterThan(0)
+      expect(originalChartDatasets.length).toBeGreaterThan(0)
+      
+      // Modify data
+      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      
+      // Reset
+      calculator.resetUsageToOriginal()
+      
+      // Verify chart data is preserved after reset
+      expect(calculator.chartData.value.dailyUsage.labels.length).toBe(originalChartLabels.length)
+      expect(calculator.chartData.value.dailyUsage.datasets.length).toBe(originalChartDatasets.length)
+      
+      // Verify chart data is not empty
+      expect(calculator.chartData.value.dailyUsage.labels.length).toBeGreaterThan(0)
+      expect(calculator.chartData.value.dailyUsage.datasets[0].data.length).toBeGreaterThan(0)
+      
+      // Verify data values are numbers, not NaN
+      const firstDataset = calculator.chartData.value.dailyUsage.datasets[0]
+      firstDataset.data.forEach(value => {
+        expect(typeof value).toBe('number')
+        expect(isNaN(value)).toBe(false)
+      })
+    })
+
+    it('should maintain proper date formatting in chart labels after reset', () => {
+      calculator.processData(sampleData)
+      
+      // Store original chart labels
+      const originalLabels = [...calculator.chartData.value.dailyUsage.labels]
+      
+      // Verify labels are properly formatted dates
+      originalLabels.forEach(label => {
+        expect(typeof label).toBe('string')
+        expect(label).toMatch(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD format
+      })
+      
+      // Modify and reset
+      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      calculator.resetUsageToOriginal()
+      
+      // Verify labels are still properly formatted after reset
+      const restoredLabels = calculator.chartData.value.dailyUsage.labels
+      expect(restoredLabels.length).toBe(originalLabels.length)
+      
+      restoredLabels.forEach(label => {
+        expect(typeof label).toBe('string')
+        expect(label).toMatch(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD format
+      })
+    })
+
+    it('should handle period data correctly after reset', () => {
+      calculator.processData(sampleData)
+      
+      // Verify we have period data initially
+      const originalPeriods = [...new Set(calculator.usageData.value.map(row => row.plan1.period))]
+      expect(originalPeriods.length).toBeGreaterThan(0)
+      
+      // Store original dataset structure
+      const originalDatasets = calculator.chartData.value.dailyUsage.datasets.map(ds => ds.label)
+      
+      // Modify and reset
+      calculator.updateMonthlyUsage({ month: '2024-06', consumption: 100 })
+      calculator.resetUsageToOriginal()
+      
+      // Verify periods are preserved
+      const restoredPeriods = [...new Set(calculator.usageData.value.map(row => row.plan1.period))]
+      expect(restoredPeriods.length).toBe(originalPeriods.length)
+      
+      // Verify chart datasets match periods
+      const restoredDatasets = calculator.chartData.value.dailyUsage.datasets.map(ds => ds.label)
+      expect(restoredDatasets.length).toBe(originalDatasets.length)
+      
+      originalDatasets.forEach(period => {
+        expect(restoredDatasets).toContain(period)
+      })
     })
   })
 })
