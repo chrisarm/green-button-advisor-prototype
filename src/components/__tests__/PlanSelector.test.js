@@ -194,7 +194,7 @@ describe('PlanSelector', () => {
       const touDr1Card = planCards[0]
       expect(touDr1Card.find('h3').text()).toBe('TOU-DR1')
       expect(touDr1Card.find('h4').text()).toBe('TOU-DR1 - Time of Use Service')
-      expect(touDr1Card.find('.monthly-charge').text()).toBe('Monthly Charge: $0.40')
+      expect(touDr1Card.find('.monthly-charge').text()).toBe('SDGE Monthly Charge: $0.40')
 
       // Check EV-TOU-5 plan with requirements
       const evTou5Card = planCards[1]

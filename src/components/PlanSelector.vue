@@ -22,7 +22,7 @@
         
         <div class="plan-details">
           <div class="monthly-charge">
-            Monthly Charge: ${{ plan.monthlyCharge.toFixed(2) }}
+            SDGE Monthly Charge: ${{ plan.monthlyCharge.toFixed(2) }}
           </div>
           
           <div v-if="plan.requirements.length > 0" class="requirements">
