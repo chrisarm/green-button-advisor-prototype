@@ -111,6 +111,19 @@
       </div>
     </div>
 
+    <!-- Reset Button -->
+    <div v-if="hasDataBeenModified" class="reset-section">
+      <button 
+        @click="handleResetUsage" 
+        class="reset-button"
+        data-testid="reset-usage-button"
+        title="Reset all usage values to original data"
+      >
+        🔄 Reset to Original Usage
+      </button>
+      <p class="reset-help">Click to undo all your edits and restore the original usage data.</p>
+    </div>
+
     <!-- Monthly Details -->
     <div v-if="monthlyComparisons.length > 0" class="monthly-section">
       <h2>Monthly Breakdown</h2>
@@ -162,10 +175,14 @@ const props = defineProps({
   overallComparison: Object,
   periodComparisons: Array,
   monthlyComparisons: Array,
-  chartData: Object
+  chartData: Object,
+  hasDataBeenModified: {
+    type: Boolean,
+    default: false
+  }
 })
 
-const emit = defineEmits(['update-monthly-usage', 'update-period-usage'])
+const emit = defineEmits(['update-monthly-usage', 'update-period-usage', 'reset-usage'])
 
 // Local refs for editable data
 const editableMonthlyData = ref([])
@@ -212,6 +229,16 @@ const updatePeriodUsage = (index, newValue) => {
       period: editablePeriodData.value[index].period,
       consumption: numValue
     })
+  }
+}
+
+// Handle reset usage
+const handleResetUsage = () => {
+  const confirmed = window.confirm(
+    'Are you sure you want to reset all usage values to the original data? This will undo all your edits.'
+  )
+  if (confirmed) {
+    emit('reset-usage')
   }
 }
 
@@ -550,6 +577,47 @@ tr:hover {
   border-color: var(--link-color);
 }
 
+/* Reset section styling */
+.reset-section {
+  margin: 30px 0;
+  text-align: center;
+  padding: 20px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid var(--link-color);
+  border-radius: 8px;
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
+}
+
+.reset-button:hover {
+  background: linear-gradient(135deg, #f57c00, #ef6c00);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+}
+
+.reset-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
+}
+
+.reset-help {
+  margin: 10px 0 0 0;
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .summary-cards {
@@ -576,6 +644,16 @@ tr:hover {
   
   th, td {
     padding: 8px 10px;
+  }
+  
+  .reset-section {
+    padding: 15px;
+    margin: 20px 0;
+  }
+  
+  .reset-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
   }
 }
 </style>

@@ -37,6 +37,7 @@ function parseAndAdjustDate(dateStr, timeStr) {
 
 export function useMultiPlanCalculator() {
   const usageData = ref([]);
+  const originalUsageData = ref([]);
   const selectedPlans = ref(['TOU-DR1', 'EV-TOU-5']); // Default selection
   const planComparisons = ref({});
   const overallComparison = ref(null);
@@ -50,6 +51,7 @@ export function useMultiPlanCalculator() {
 
   const processing = ref(false);
   const error = ref(null);
+  const hasDataBeenModified = ref(false);
 
   /**
    * Sets the plans to compare
@@ -166,6 +168,10 @@ export function useMultiPlanCalculator() {
       });
 
       usageData.value = costCalculated;
+      
+      // Store original data for reset functionality
+      originalUsageData.value = JSON.parse(JSON.stringify(costCalculated));
+      hasDataBeenModified.value = false;
 
       // 4. Generate summaries and comparisons
       generateComparisons(costCalculated);
@@ -350,6 +356,7 @@ export function useMultiPlanCalculator() {
 
   const resetState = () => {
     usageData.value = [];
+    originalUsageData.value = [];
     overallComparison.value = null;
     periodComparisons.value = [];
     monthlyComparisons.value = [];
@@ -358,6 +365,22 @@ export function useMultiPlanCalculator() {
       monthlyComparison: { labels: [], datasets: [] },
       monthlySavings: { labels: [], datasets: [] }
     };
+    hasDataBeenModified.value = false;
+  };
+
+  // Reset usage data to original values
+  const resetUsageToOriginal = () => {
+    if (!originalUsageData.value.length) {
+      return; // No original data to reset to
+    }
+    
+    // Deep clone the original data to restore
+    usageData.value = JSON.parse(JSON.stringify(originalUsageData.value));
+    hasDataBeenModified.value = false;
+    
+    // Regenerate all comparisons and charts
+    generateComparisons(usageData.value);
+    prepareChartData(usageData.value);
   };
 
   // Handle manual usage updates
@@ -390,6 +413,9 @@ export function useMultiPlanCalculator() {
         row.plan2.rate = rate2Info.rate;
       }
     });
+    
+    // Mark data as modified
+    hasDataBeenModified.value = true;
     
     // Regenerate all comparisons and charts
     generateComparisons(usageData.value);
@@ -432,6 +458,9 @@ export function useMultiPlanCalculator() {
       }
     });
     
+    // Mark data as modified
+    hasDataBeenModified.value = true;
+    
     // Regenerate all comparisons and charts
     generateComparisons(usageData.value);
     prepareChartData(usageData.value);
@@ -440,6 +469,7 @@ export function useMultiPlanCalculator() {
   return {
     // Data
     usageData,
+    originalUsageData,
     selectedPlans,
     overallComparison,
     periodComparisons,
@@ -447,6 +477,7 @@ export function useMultiPlanCalculator() {
     chartData,
     processing,
     error,
+    hasDataBeenModified,
 
     // Methods
     processData,
@@ -454,6 +485,7 @@ export function useMultiPlanCalculator() {
     getSelectablePlans,
     resetState,
     updateMonthlyUsage,
-    updatePeriodUsage
+    updatePeriodUsage,
+    resetUsageToOriginal
   };
 }

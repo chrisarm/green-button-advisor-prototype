@@ -84,8 +84,10 @@
           :period-comparisons="periodComparisons"
           :monthly-comparisons="monthlyComparisons"
           :chart-data="chartData"
+          :has-data-been-modified="hasDataBeenModified"
           @update-monthly-usage="updateMonthlyUsage"
           @update-period-usage="updatePeriodUsage"
+          @reset-usage="resetUsageToOriginal"
         />
       </div>
 
@@ -145,7 +147,9 @@ const {
   setSelectedPlans,
   getSelectablePlans,
   updateMonthlyUsage,
-  updatePeriodUsage
+  updatePeriodUsage,
+  resetUsageToOriginal,
+  hasDataBeenModified
 } = useMultiPlanCalculator();
 
 // Function to navigate to the main app
