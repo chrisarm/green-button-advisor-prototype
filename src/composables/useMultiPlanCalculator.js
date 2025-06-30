@@ -77,6 +77,8 @@ export function useMultiPlanCalculator() {
   const error = ref(null);
   const hasDataBeenModified = ref(false);
   const updating = ref(false);
+  const hasEV = ref(false);
+  const isRecommendationMode = ref(false);
 
   /**
    * Sets the plans to compare
@@ -521,6 +523,103 @@ export function useMultiPlanCalculator() {
     }
   };
 
+  /**
+   * Calculates the total cost for a given plan using current usage data
+   * @param {string} planType - Plan type key
+   * @param {Array} data - Usage data array
+   * @returns {number} Total cost including monthly charges
+   */
+  const calculatePlanTotalCost = (planType, data) => {
+    const planInfo = getPlanInfo(planType);
+    const uniqueMonths = new Set(data.map(row => row.month_year_key));
+    const totalMonths = uniqueMonths.size;
+    
+    // Pre-calculate daily totals once to avoid repeated filtering
+    const dailyTotals = {};
+    data.forEach(row => {
+      if (!dailyTotals[row.date_key]) {
+        dailyTotals[row.date_key] = 0;
+      }
+      dailyTotals[row.date_key] += row.Consumption;
+    });
+    
+    // Calculate consumption costs
+    const consumptionCost = data.reduce((sum, row) => {
+      const dailyTotal = dailyTotals[row.date_key];
+      const rateInfo = calculateRate(planType, row.hour, row.is_weekend, row.season, row.Consumption, dailyTotal);
+      return sum + rateInfo.baseCost;
+    }, 0);
+    
+    // Add monthly charges
+    return consumptionCost + (planInfo.monthlyCharge * totalMonths);
+  };
+
+  /**
+   * Recommends the best 2 plans based on usage data
+   * @returns {Promise<Array<string>>} Array of 2 recommended plan types
+   */
+  const getRecommendedPlans = async () => {
+    if (!usageData.value.length) {
+      throw new Error('No usage data available for recommendations');
+    }
+    
+    // Get eligible plans based on EV ownership
+    console.log('getRecommendedPlans: hasEV.value =', hasEV.value);
+    const eligiblePlans = getAvailablePlans().filter(planType => {
+      if (planType === 'EV-TOU-5') {
+        const isEligible = hasEV.value;
+        console.log(`getRecommendedPlans: EV-TOU-5 eligibility = ${isEligible} (hasEV = ${hasEV.value})`);
+        return isEligible; // Only include EV plan if user has EV
+      }
+      return true;
+    });
+    
+    console.log('getRecommendedPlans: eligible plans =', eligiblePlans);
+    
+    // Calculate total cost for each eligible plan with async breaks
+    const planCosts = [];
+    for (const planType of eligiblePlans) {
+      // Allow UI to update between calculations
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      const totalCost = calculatePlanTotalCost(planType, usageData.value);
+      planCosts.push({ planType, totalCost });
+    }
+    
+    // Sort by total cost (lowest first)
+    planCosts.sort((a, b) => a.totalCost - b.totalCost);
+    
+    // Return the 2 cheapest plans
+    return planCosts.slice(0, 2).map(plan => plan.planType);
+  };
+
+  /**
+   * Sets EV eligibility status
+   * @param {boolean} eligibility - Whether user has EV
+   */
+  const setEVEligibility = (eligibility) => {
+    hasEV.value = eligibility;
+  };
+
+  /**
+   * Applies recommended plans as selection
+   */
+  const applyRecommendedPlans = async () => {
+    try {
+      updating.value = true;
+      const recommended = await getRecommendedPlans();
+      setSelectedPlans(recommended);
+      isRecommendationMode.value = true;
+      return recommended;
+    } catch (err) {
+      console.error('Error getting recommendations:', err);
+      error.value = err.message;
+      return null;
+    } finally {
+      updating.value = false;
+    }
+  };
+
   return {
     // Data
     usageData,
@@ -534,6 +633,8 @@ export function useMultiPlanCalculator() {
     error,
     hasDataBeenModified,
     updating,
+    hasEV,
+    isRecommendationMode,
 
     // Methods
     processData,
@@ -542,6 +643,9 @@ export function useMultiPlanCalculator() {
     resetState,
     updateMonthlyUsage,
     updatePeriodUsage,
-    resetUsageToOriginal
+    resetUsageToOriginal,
+    setEVEligibility,
+    getRecommendedPlans,
+    applyRecommendedPlans
   };
 }

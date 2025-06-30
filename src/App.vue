@@ -19,9 +19,14 @@
     <!-- Onboarding Wizard -->
     <div v-if="currentPage === 'onboarding'">
       <OnboardingWizard 
+        :recommended-plans="selectedPlans"
+        :is-processing="updating"
+        :ev-ownership="hasEV"
         @complete="handleOnboardingComplete"
         @data-uploaded="handleUploadData"
         @plans-selected="handleOnboardingPlansSelected"
+        @ev-eligibility-changed="handleEVEligibilityChange"
+        @get-recommendations="handleGetRecommendations"
       />
     </div>
 
@@ -29,8 +34,12 @@
     <div v-if="currentPage === 'plans'">
       <PlanSelector 
         :available-plans="getSelectablePlans()"
+        :has-usage-data="usageData.length > 0"
+        :is-recommendation-mode="isRecommendationMode"
         @plan-toggled="handlePlanToggle"
         @plans-selected="goToMain"
+        @ev-eligibility-changed="handleEVEligibilityChange"
+        @get-recommendations="handleGetRecommendations"
       />
     </div>
 
@@ -188,7 +197,13 @@ const {
   updatePeriodUsage,
   resetUsageToOriginal,
   hasDataBeenModified,
-  updating
+  updating,
+  hasEV,
+  isRecommendationMode,
+  setEVEligibility,
+  getRecommendedPlans,
+  applyRecommendedPlans,
+  usageData
 } = useMultiPlanCalculator();
 
 // Function to navigate to the main app
@@ -287,6 +302,31 @@ const loadSampleData = async () => {
 const handleUploadData = (parsedData) => {
   console.log("Received parsed data:", parsedData);
   processData(parsedData);
+};
+
+// Handle EV eligibility change
+const handleEVEligibilityChange = (eligibility) => {
+  setEVEligibility(eligibility);
+};
+
+// Handle get recommendations
+const handleGetRecommendations = async () => {
+  if (usageData.value.length === 0) {
+    error.value = 'Please upload your usage data first to get recommendations';
+    return;
+  }
+  
+  try {
+    const recommended = await applyRecommendedPlans();
+    if (recommended) {
+      console.log('Recommended plans:', recommended);
+      // For onboarding, we don't automatically proceed to main view
+      // The user will click "Start Comparison" when ready
+    }
+  } catch (err) {
+    console.error('Error applying recommendations:', err);
+    error.value = 'Failed to generate recommendations: ' + err.message;
+  }
 };
 
 </script>

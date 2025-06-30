@@ -3,6 +3,36 @@
     <h2>SDGE Electric Plan Comparison</h2>
     <p>Select Two (2) Plans below to compare the price difference for your usage.</p>
     
+    <!-- EV Eligibility Question -->
+    <div class="ev-eligibility">
+      <label class="ev-checkbox">
+        <input 
+          type="checkbox" 
+          v-model="hasEV" 
+          @change="$emit('ev-eligibility-changed', hasEV)"
+        />
+        I own an electric vehicle registered in California
+      </label>
+    </div>
+    
+    <!-- Recommendation Option -->
+    <div class="recommendation-section">
+      <button 
+        @click="$emit('get-recommendations')" 
+        class="recommendation-btn"
+        :disabled="!canGetRecommendations"
+      >
+        {{ recommendationButtonText }}
+      </button>
+      <p class="recommendation-help">
+        Upload your Green Button data first, then we'll analyze your usage patterns to recommend the best plans for you.
+      </p>
+    </div>
+    
+    <div class="divider">
+      <span>OR</span>
+    </div>
+    
     <div class="plans-container">
       <div 
         v-for="plan in availablePlans" 
@@ -69,16 +99,26 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   availablePlans: {
     type: Array,
     required: true
+  },
+  hasUsageData: {
+    type: Boolean,
+    default: false
+  },
+  isRecommendationMode: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['planToggled', 'plansSelected'])
+const emit = defineEmits(['planToggled', 'plansSelected', 'ev-eligibility-changed', 'get-recommendations'])
+
+const hasEV = ref(false)
 
 const selectedPlans = computed(() => 
   props.availablePlans.filter(plan => plan.selected)
@@ -118,6 +158,17 @@ const getPositionClass = (planType) => {
   if (index === 1) return 'position-right'
   return ''
 }
+
+const canGetRecommendations = computed(() => {
+  return props.hasUsageData
+})
+
+const recommendationButtonText = computed(() => {
+  if (!props.hasUsageData) {
+    return 'Upload Data First to Get Recommendations'
+  }
+  return 'Get Recommended Plans'
+})
 </script>
 
 <style scoped>
@@ -303,6 +354,90 @@ const getPositionClass = (planType) => {
 }
 
 
+/* Recommendation section styles */
+.ev-eligibility {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: var(--button-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.ev-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.ev-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.recommendation-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.recommendation-btn {
+  padding: 15px 30px;
+  font-size: 1.1em;
+  font-weight: 600;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.recommendation-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.recommendation-btn:disabled {
+  background: var(--border-color);
+  color: var(--text-color);
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.recommendation-help {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 30px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.divider span {
+  padding: 0 20px;
+  color: var(--text-color);
+  font-weight: 600;
+  opacity: 0.7;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .plans-container {
@@ -316,6 +451,11 @@ const getPositionClass = (planType) => {
   
   .plan h3 {
     font-size: 1.3em;
+  }
+  
+  .recommendation-btn {
+    padding: 12px 20px;
+    font-size: 1em;
   }
 }
 </style>

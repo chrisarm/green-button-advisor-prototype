@@ -5,6 +5,35 @@
       <p class="subtitle">Based on your usage data, we'll help you select the best plans to compare</p>
     </div>
 
+    <!-- EV Eligibility Question -->
+    <div class="ev-eligibility">
+      <label class="ev-checkbox">
+        <input 
+          type="checkbox" 
+          v-model="hasEV" 
+          @change="handleEVEligibilityChange"
+        />
+        I own an electric vehicle registered in California
+      </label>
+      <p class="ev-help">This makes you eligible for the EV-TOU-5 plan with special overnight rates</p>
+    </div>
+
+    <!-- Get Recommendations Button -->
+    <div class="recommendation-section">
+      <button 
+        @click="getSmartRecommendations" 
+        class="recommendation-btn"
+        :disabled="!uploadedData || isLoading"
+      >
+        <span v-if="!isLoading" class="btn-icon">🧠</span>
+        <span v-else class="btn-icon loading">⏳</span>
+        {{ isLoading ? 'Analyzing Your Usage...' : 'Get Smart Recommendations' }}
+      </button>
+      <p class="recommendation-help">
+        We'll analyze your usage patterns and recommend the 2 best plans for you
+      </p>
+    </div>
+
     <!-- Usage Summary -->
     <div v-if="uploadedData" class="usage-summary">
       <h3>Your Usage Summary</h3>
@@ -178,7 +207,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { SDGE_PLANS } from '../../utils/sdgeTariffs.js'
 
 const props = defineProps({
@@ -186,12 +215,37 @@ const props = defineProps({
   preSelectedPlans: {
     type: Array,
     default: () => []
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
+  },
+  evOwnership: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['back', 'plans-selected'])
+const emit = defineEmits(['back', 'plans-selected', 'ev-eligibility-changed', 'get-recommendations'])
 
 const selectedPlans = ref([...props.preSelectedPlans])
+const hasEV = ref(props.evOwnership)
+const smartRecommendationsUsed = ref(false)
+
+// Watch for changes in EV ownership from parent
+watch(() => props.evOwnership, (newValue) => {
+  hasEV.value = newValue
+  console.log('PlanSelection: EV ownership changed to:', newValue)
+}, { immediate: true })
+
+// Watch for changes in preSelectedPlans (from parent recommendations)
+watch(() => props.preSelectedPlans, (newPlans) => {
+  if (newPlans && newPlans.length > 0) {
+    selectedPlans.value = [...newPlans]
+    smartRecommendationsUsed.value = true
+    console.log('PlanSelection: Updated selectedPlans from props:', selectedPlans.value)
+  }
+}, { immediate: true, deep: true })
 
 const availablePlans = computed(() => {
   const plans = Object.entries(SDGE_PLANS).map(([planKey, plan]) => ({
@@ -213,16 +267,23 @@ const selectedPlanNames = computed(() => selectedPlans.value)
 
 // Usage analysis
 const totalUsage = computed(() => {
-  if (!props.uploadedData?.data) return 0
-  return props.uploadedData.data.reduce((sum, entry) => sum + entry.usage, 0)
+  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
+  return props.uploadedData.reduce((sum, row) => {
+    const consumption = parseFloat(row.Consumption || row.consumption || 0)
+    return sum + (isNaN(consumption) ? 0 : consumption)
+  }, 0)
 })
 
 const monthsAnalyzed = computed(() => {
-  if (!props.uploadedData?.data) return 0
+  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
   const months = new Set()
-  props.uploadedData.data.forEach(entry => {
-    const month = entry.date.substring(0, 7) // YYYY-MM
-    months.add(month)
+  props.uploadedData.forEach(row => {
+    const dateStr = row.Date || row.date
+    if (dateStr) {
+      // Handle various date formats and extract year-month
+      const month = dateStr.substring(0, 7) // Assumes YYYY-MM format or MM/DD/YYYY
+      months.add(month)
+    }
   })
   return months.size
 })
@@ -232,11 +293,25 @@ const averageMonthlyUsage = computed(() => {
   return totalUsage.value / monthsAnalyzed.value
 })
 
+// For peak usage calculation, we need to estimate since we don't have processed time periods yet
 const peakUsagePercentage = computed(() => {
-  if (!props.uploadedData?.data) return 0
-  const peakUsage = props.uploadedData.data
-    .filter(entry => entry.timePeriod === 'On-Peak')
-    .reduce((sum, entry) => sum + entry.usage, 0)
+  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
+  
+  // Estimate peak usage by time of day (4PM - 9PM weekdays roughly)
+  const peakUsage = props.uploadedData.reduce((sum, row) => {
+    const timeStr = row['Start Time'] || row.startTime || ''
+    const consumption = parseFloat(row.Consumption || row.consumption || 0)
+    
+    if (isNaN(consumption)) return sum
+    
+    // Simple peak time detection (4 PM - 9 PM)
+    const isPeakTime = timeStr.includes('4:00 PM') || timeStr.includes('5:00 PM') || 
+                      timeStr.includes('6:00 PM') || timeStr.includes('7:00 PM') || 
+                      timeStr.includes('8:00 PM')
+    
+    return isPeakTime ? sum + consumption : sum
+  }, 0)
+  
   return totalUsage.value > 0 ? (peakUsage / totalUsage.value) * 100 : 0
 })
 
@@ -354,6 +429,17 @@ const getPositionClass = (planType) => {
   if (index === 0) return 'position-left'
   if (index === 1) return 'position-right'
   return ''
+}
+
+const handleEVEligibilityChange = () => {
+  emit('ev-eligibility-changed', hasEV.value)
+}
+
+const getSmartRecommendations = async () => {
+  if (!props.uploadedData) return
+  
+  // Emit to parent to handle the recommendation logic
+  emit('get-recommendations')
 }
 
 const completeSelection = () => {
@@ -808,6 +894,99 @@ onMounted(() => {
 
 .back-btn:hover .arrow {
   transform: translateX(-5px);
+}
+
+/* EV eligibility and recommendations */
+.ev-eligibility {
+  margin: 30px 0;
+  padding: 20px;
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ev-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.ev-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.ev-help {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.recommendation-section {
+  margin: 30px 0;
+  text-align: center;
+}
+
+.recommendation-btn {
+  padding: 15px 30px;
+  font-size: 1.1em;
+  font-weight: 600;
+  background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recommendation-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+.recommendation-btn:disabled {
+  background: var(--border-color);
+  color: var(--text-color);
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-icon {
+  font-size: 1.2em;
+}
+
+.recommendation-help {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Mobile responsive */

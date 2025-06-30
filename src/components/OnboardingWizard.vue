@@ -28,22 +28,46 @@
         @complete="handleComplete"
         @data-uploaded="handleDataUploaded"
         @plans-selected="handlePlansSelected"
+        @ev-eligibility-changed="handleEVEligibilityChanged"
+        @get-recommendations="handleGetRecommendations"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, defineEmits } from 'vue'
+import { ref, computed, defineEmits, defineProps, watch } from 'vue'
 import PlanEducation from './onboarding/PlanEducation.vue'
 import DataUpload from './onboarding/DataUpload.vue'
 import PlanSelection from './onboarding/PlanSelection.vue'
 
-const emit = defineEmits(['complete', 'data-uploaded', 'plans-selected'])
+const props = defineProps({
+  recommendedPlans: {
+    type: Array,
+    default: () => []
+  },
+  isProcessing: {
+    type: Boolean,
+    default: false
+  },
+  evOwnership: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['complete', 'data-uploaded', 'plans-selected', 'ev-eligibility-changed', 'get-recommendations'])
 
 const currentStep = ref(0)
 const uploadedData = ref(null)
 const selectedPlans = ref([])
+
+// Watch for recommended plans and update selected plans
+watch(() => props.recommendedPlans, (newRecommended) => {
+  if (newRecommended && newRecommended.length === 2) {
+    selectedPlans.value = [...newRecommended]
+  }
+}, { immediate: true })
 
 const steps = [
   { label: 'Learn Plans', component: 'PlanEducation' },
@@ -71,7 +95,9 @@ const currentStepProps = computed(() => {
     case 2: // PlanSelection
       return {
         uploadedData: uploadedData.value,
-        preSelectedPlans: selectedPlans.value
+        preSelectedPlans: selectedPlans.value,
+        isLoading: props.isProcessing,
+        evOwnership: props.evOwnership
       }
     default:
       return {}
@@ -106,6 +132,14 @@ const handlePlansSelected = (plans) => {
   selectedPlans.value = plans
   emit('plans-selected', plans)
   handleComplete()
+}
+
+const handleEVEligibilityChanged = (hasEV) => {
+  emit('ev-eligibility-changed', hasEV)
+}
+
+const handleGetRecommendations = () => {
+  emit('get-recommendations')
 }
 
 const handleComplete = () => {
