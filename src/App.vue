@@ -16,7 +16,16 @@
     <h2 class="subtitle">Let's make the world a bit greener</h2>
     <p class="motto">We'll start by saving you some green by finding the best SDGE electrical plan for you.</p>
     <hr/>
-    <!-- Plans Screen -->
+    <!-- Onboarding Wizard -->
+    <div v-if="currentPage === 'onboarding'">
+      <OnboardingWizard 
+        @complete="handleOnboardingComplete"
+        @data-uploaded="handleUploadData"
+        @plans-selected="handleOnboardingPlansSelected"
+      />
+    </div>
+
+    <!-- Legacy Plans Screen (for existing users) -->
     <div v-if="currentPage === 'plans'">
       <PlanSelector 
         :available-plans="getSelectablePlans()"
@@ -26,7 +35,7 @@
     </div>
 
     <!-- Current App Content -->
-    <div v-else>
+    <div v-else-if="currentPage === 'main'">
 
       <div v-if="!overallComparison && !processing">
         <h3>Compare {{ selectedPlansText }} and see each plan's costs for your usage</h3>
@@ -95,6 +104,33 @@
       <button @click="goToPlans" class="sample-data-btn">Back</button>
       <button @click="startOver" class="sample-data-btn">Start Over</button>
     </div>
+
+    <!-- Results from Onboarding -->
+    <div v-else-if="currentPage === 'results'">
+      <div v-if="processing">
+        <p>Processing...</p>
+      </div>
+
+      <div v-if="error">
+        <p style="color: red;">Error: {{ error }}</p>
+      </div>
+
+      <div v-if="overallComparison && !processing && !error">
+        <ComparisonResults 
+          :overall-comparison="overallComparison"
+          :period-comparisons="periodComparisons"
+          :monthly-comparisons="monthlyComparisons"
+          :chart-data="chartData"
+          :has-data-been-modified="hasDataBeenModified"
+          :updating="updating"
+          @update-monthly-usage="updateMonthlyUsage"
+          @update-period-usage="updatePeriodUsage"
+          @reset-usage="resetUsageToOriginal"
+        />
+      </div>
+
+      <button @click="startOver" class="sample-data-btn">Start Over</button>
+    </div>
     <hr/>
     <div class="disclaimer">
       <h2>Electric Plan Recommendation Disclaimer</h2>
@@ -121,6 +157,7 @@ import FileUpload from './components/FileUpload.vue';
 import PlanSelector from './components/PlanSelector.vue';
 import ComparisonResults from './components/ComparisonResults.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
+import OnboardingWizard from './components/OnboardingWizard.vue';
 import { useMultiPlanCalculator } from './composables/useMultiPlanCalculator.js';
 import { Bar as BarChart } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale } from 'chart.js';
@@ -131,7 +168,7 @@ import sampleCsvPath from './assets/sample.csv?url';
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 // Define reactive variables
-const currentPage = ref('plans'); // Start on the plans screen
+const currentPage = ref('onboarding'); // Start with onboarding wizard
 const showInstructions = ref(false);
 const logoError = ref(false);
 
@@ -167,6 +204,24 @@ const goToPlans = () => {
 // Function to refresh the page
 const startOver = () => {
   window.location.reload();
+};
+
+// Handle onboarding completion
+const handleOnboardingComplete = (data) => {
+  console.log('App: Received onboarding completion data:', data);
+  if (data.plans && data.plans.length === 2) {
+    console.log('App: Setting selected plans:', data.plans);
+    setSelectedPlans(data.plans);
+  }
+  if (data.data) {
+    processData(data.data);
+  }
+  currentPage.value = 'results';
+};
+
+// Handle onboarding plan selection
+const handleOnboardingPlansSelected = (plans) => {
+  setSelectedPlans(plans);
 };
 
 // Handle plan selection toggle

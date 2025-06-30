@@ -1,0 +1,221 @@
+Product Requirements Document: Green Button Energy Plan Advisor Multi-Page Workflow
+
+  Executive Summary
+
+  Transform the current single-page energy plan calculator into a guided 7-page workflow that improves user
+  engagement, comprehension, and conversion while maintaining full functionality at each implementation phase.
+
+  Product Vision
+
+  Create an intuitive, educational journey that helps users understand their energy usage patterns and find
+  optimal electricity plans, resulting in significant cost savings while building trust through transparency and
+  step-by-step guidance.
+
+  Success Metrics
+
+  - Primary: User completion rate through entire workflow (target: 60%+)
+  - Secondary: Average time spent on site (target: 5+ minutes)
+  - Business: Donation conversion rate (target: 5%+)
+  - Quality: User satisfaction score via exit survey (target: 4.2/5)
+
+  Implementation Phases
+
+  Phase 1: Foundation & Landing Page (Weekend 1)
+
+  Goal: Replace current page with professional landing page while preserving full calculator functionality
+
+  Deliverables:
+  - Modern landing page with value proposition
+  - Dismissible disclaimer banner
+  - "Save Green" CTA button
+  - FAQ section (collapsible)
+  - Fallback link to "Quick Calculator" (current functionality)
+
+  Technical Requirements:
+  - Vue Router setup for multi-page navigation
+  - Responsive design for mobile/desktop
+  - Local storage for user progress
+  - Analytics tracking setup
+
+  Success Criteria:
+  - Landing page loads in <2s
+  - Mobile-friendly design
+  - Existing calculator remains accessible
+
+  ---
+  Phase 2: Plan Selection Flow (Weekend 2)
+
+  Goal: Add current plan selection and guided recommendation system
+
+  Deliverables:
+  - Page 2: Current plan selector with SDG&E plans
+  - Page 3: Usage pattern questionnaire (5-7 questions)
+  - Page 4: Recommended plan selection
+  - Navigation between pages with progress indicator
+
+  Technical Requirements:
+  - Plan data integration from existing sdgeTariffs.js
+  - Recommendation algorithm based on questionnaire
+  - Form validation and state management
+  - Back/forward navigation
+
+  Success Criteria:
+  - All SDG&E plans selectable
+  - Recommendation accuracy >80% for common scenarios
+  - Progress saves between page refreshes
+
+  ---
+  Phase 3: Data Upload & Results (Weekend 3)
+
+  Goal: Implement data selection and primary results display
+
+  Deliverables:
+  - Page 5: File upload interface with sample data option
+  - Page 6: Cost comparison results with donation CTAs
+  - Enhanced file validation and error handling
+  - Visual results display (charts/graphs)
+
+  Technical Requirements:
+  - Drag-and-drop file upload component
+  - CSV parsing with validation
+  - Results calculation using existing logic
+  - Stripe donation integration
+  - Error handling for bad data
+
+  Success Criteria:
+  - Supports Green Button XML and CSV formats
+  - Sample data demonstrates clear savings
+  - File upload success rate >95%
+
+  ---
+  Phase 4: Analytics Dashboard (Weekend 4)
+
+  Goal: Complete the workflow with detailed analysis and interactivity
+
+  Deliverables:
+  - Page 7: Interactive analytics dashboard
+  - Editable usage data tables
+  - Dynamic chart updates
+  - Export functionality
+  - Enhanced donation placement
+
+  Technical Requirements:
+  - Interactive data visualization (Chart.js/D3)
+  - Real-time table editing
+  - Data export (PDF/CSV)
+  - Advanced filtering and sorting
+  - Performance optimization for large datasets
+
+  Success Criteria:
+  - Dashboard loads with sample data in <3s
+  - Tables support in-line editing
+  - Charts update in real-time
+
+  ---
+  Phase 5: UX Polish & Optimization (Weekend 5)
+
+  Goal: Enhance user experience and optimize conversion
+
+  Deliverables:
+  - Exit-intent popups
+  - Social proof elements
+  - Advanced tooltips and help system
+  - A/B test infrastructure
+  - Performance optimizations
+
+  Technical Requirements:
+  - Event tracking for user behavior
+  - Lazy loading for performance
+  - Progressive enhancement
+  - SEO optimization
+  - Accessibility improvements (WCAG 2.1)
+
+  Success Criteria:
+  - Page load times <2s on all pages
+  - Accessibility score >90%
+  - Mobile performance >85%
+
+  User Stories
+
+  Core Journey
+
+  1. As a homeowner, I want to understand if I'm overpaying for electricity so I can save money
+  2. As a user, I want to easily identify my current plan so I can compare options
+  3. As a customer, I want personalized recommendations so I don't have to research all plans
+  4. As a data provider, I want simple upload options so I can get accurate results
+  5. As a saver, I want to see clear before/after costs so I understand my potential savings
+
+  Secondary Features
+
+  6. As a mobile user, I want the site to work well on my phone
+  7. As a supporter, I want easy donation options when the tool saves me money
+  8. As an analyst, I want to explore my usage patterns in detail
+
+  Technical Specifications
+
+  Architecture
+
+  - Frontend: Vue 3 with Composition API
+  - Routing: Vue Router 4
+  - State Management: Pinia or Composables
+  - Styling: Tailwind CSS or existing CSS with enhancements
+  - Charts: Chart.js or similar lightweight library
+
+  Data Flow
+
+  1. User selections → Local storage persistence
+  2. File upload → Client-side parsing and validation
+  3. Calculations → Existing energy calculator logic
+  4. Results → Interactive dashboard with export options
+
+  Performance Requirements
+
+  - First Contentful Paint: <1.5s
+  - Time to Interactive: <3s
+  - Bundle size increase: <200KB
+  - Mobile compatibility: iOS 12+, Android 8+
+
+  Risk Mitigation
+
+  Technical Risks
+
+  - File upload failures: Implement robust error handling and multiple format support
+  - Performance degradation: Lazy load components and optimize bundle size
+  - Mobile compatibility: Test extensively on real devices
+
+  User Experience Risks
+
+  - Workflow abandonment: Provide clear value at each step and save progress
+  - Confusion: Include tooltips, help text, and clear navigation
+  - Data privacy concerns: Add clear privacy policy and data handling explanation
+
+  Business Risks
+
+  - Low conversion: A/B test donation placement and messaging
+  - User frustration: Maintain fallback to simple calculator
+  - Technical debt: Follow Vue.js best practices and maintain test coverage
+
+  Success Metrics by Phase
+
+  Post-Launch Optimization
+
+  Week 1-2: Data Collection
+
+  - User behavior analytics
+  - Performance monitoring
+  - Error tracking
+
+  Week 3-4: Initial Optimizations
+
+  - A/B testing donation placement
+  - UX improvements based on user feedback
+  - Performance optimizations
+
+  Month 2+: Feature Enhancements
+
+  - Additional utility company support
+  - Advanced analytics features
+  - Integration with utility APIs
+
+  This phased approach ensures users always have a working product while steadily improving the experience and
+  adding value at each stage.

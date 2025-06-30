@@ -83,10 +83,12 @@ export function useMultiPlanCalculator() {
    * @param {Array<string>} plans - Array of 0-2 plan type keys
    */
   const setSelectedPlans = (plans) => {
+    console.log('MultiPlanCalculator: setSelectedPlans called with:', plans);
     if (plans.length > 2) {
       throw new Error('Maximum of two plans can be selected for comparison');
     }
     selectedPlans.value = [...plans];
+    console.log('MultiPlanCalculator: selectedPlans.value set to:', selectedPlans.value);
   };
 
   /**
