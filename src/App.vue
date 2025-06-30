@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 import FileUpload from './components/FileUpload.vue';
 import PlanSelector from './components/PlanSelector.vue';
 import ComparisonResults from './components/ComparisonResults.vue';
@@ -172,6 +172,9 @@ import { Bar as BarChart } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, TimeScale } from 'chart.js';
 import { parseGreenButtonCsv } from './utils/csvParser';
 import sampleCsvPath from './assets/sample.csv?url';
+
+// Get analytics instance
+const analytics = inject('analytics');
 
 // Register Chart.js components
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
@@ -224,6 +227,14 @@ const startOver = () => {
 // Handle onboarding completion
 const handleOnboardingComplete = (data) => {
   console.log('App: Received onboarding completion data:', data);
+  
+  // Track onboarding completion
+  analytics?.track('Onboarding Completed', {
+    hasPlans: !!(data.plans && data.plans.length === 2),
+    hasData: !!data.data,
+    method: data.method || 'unknown'
+  });
+  
   if (data.plans && data.plans.length === 2) {
     console.log('App: Setting selected plans:', data.plans);
     setSelectedPlans(data.plans);
@@ -236,6 +247,11 @@ const handleOnboardingComplete = (data) => {
 
 // Handle onboarding plan selection
 const handleOnboardingPlansSelected = (plans) => {
+  analytics?.trackPlanSelection({
+    plan1: plans[0],
+    plan2: plans[1],
+    method: 'onboarding'
+  });
   setSelectedPlans(plans);
 };
 
@@ -290,17 +306,40 @@ const loadSampleData = async () => {
     }
     const csvText = await response.text();
     const parsedData = await parseGreenButtonCsv(csvText);
+    
+    // Track sample data usage
+    analytics?.trackFileUpload({
+      method: 'sample_data',
+      size: parsedData?.length || 0,
+      success: true
+    });
+    
     processData(parsedData);
   } catch (err) {
     console.error('Error loading sample data:', err);
     error.value = err.message;
     processing.value = false;
+    
+    // Track error
+    analytics?.trackError({
+      type: 'sample_data_error',
+      component: 'App',
+      severity: 'medium'
+    });
   }
 };
 
 // Handle analyzed data
 const handleAnalyzeData = (parsedData) => {
   console.log("Received parsed data:", parsedData);
+  
+  // Track data analysis
+  analytics?.trackFileUpload({
+    method: 'csv_upload',
+    size: parsedData?.length || 0,
+    success: true
+  });
+  
   processData(parsedData);
 };
 
@@ -320,12 +359,27 @@ const handleGetRecommendations = async () => {
     const recommended = await applyRecommendedPlans();
     if (recommended) {
       console.log('Recommended plans:', recommended);
+      
+      // Track recommendation usage
+      analytics?.trackRecommendationUsed({
+        hasEV: hasEV.value,
+        count: recommended.length,
+        autoSelected: true
+      });
+      
       // For onboarding, we don't automatically proceed to main view
       // The user will click "Start Comparison" when ready
     }
   } catch (err) {
     console.error('Error applying recommendations:', err);
     error.value = 'Failed to generate recommendations: ' + err.message;
+    
+    // Track error
+    analytics?.trackError({
+      type: 'recommendation_error',
+      component: 'App',
+      severity: 'medium'
+    });
   }
 };
 

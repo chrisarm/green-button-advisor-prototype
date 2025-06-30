@@ -190,8 +190,11 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch, inject } from 'vue'
 import { Bar as BarChart } from 'vue-chartjs'
+
+// Get analytics instance
+const analytics = inject('analytics')
 
 const props = defineProps({
   overallComparison: Object,
@@ -346,6 +349,20 @@ onMounted(() => {
     attributeFilter: ['data-theme']
   })
 })
+
+// Track when comparison is first displayed
+watch(() => props.overallComparison, (newComparison) => {
+  if (newComparison && analytics) {
+    const cheaperPlan = plan1IsCheaper.value ? newComparison.plan1.name : newComparison.plan2.name
+    
+    analytics.trackComparisonCompleted({
+      totalSavings: newComparison.totalSavings,
+      monthsAnalyzed: newComparison.monthsAnalyzed,
+      totalKWh: newComparison.totalKWh,
+      cheaperPlan: cheaperPlan
+    })
+  }
+}, { immediate: true })
 
 // Chart options
 const baseChartOptions = computed(() => ({
