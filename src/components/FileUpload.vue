@@ -1,7 +1,7 @@
 <template>
   <div>
-    <label for="csvFile">Upload Energy Usage CSV:</label>
-    <input type="file" id="csvFile" @change="handleFileUpload" accept=".csv" />
+    <label for="csvFile">Analyze Energy Usage CSV:</label>
+    <input type="file" id="csvFile" @change="handleFileAnalyze" accept=".csv" />
   </div>
 </template>
 <script setup>
@@ -14,7 +14,7 @@ const showInstructions = ref(false);
 const emit = defineEmits(['file-parsed', 'file-error']);
 const errorMessage = ref('');
 
-const handleFileUpload = async (event) => {
+const handleFileAnalyze = async (event) => {
   errorMessage.value = '';
   const file = event.target.files[0];
 

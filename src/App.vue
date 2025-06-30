@@ -23,7 +23,7 @@
         :is-processing="updating"
         :ev-ownership="hasEV"
         @complete="handleOnboardingComplete"
-        @data-uploaded="handleUploadData"
+        @data-analyzed="handleAnalyzeData"
         @plans-selected="handleOnboardingPlansSelected"
         @ev-eligibility-changed="handleEVEligibilityChange"
         @get-recommendations="handleGetRecommendations"
@@ -48,8 +48,8 @@
 
       <div v-if="!overallComparison && !processing">
         <h3>Compare {{ selectedPlansText }} and see each plan's costs for your usage</h3>
-	<p>When you are ready to see the estimated cost difference for your home upload your GreenButton data.</p>
-        <FileUpload @file-parsed="handleUploadData" />
+	<p>When you are ready to see the estimated cost difference for your home, analyze your GreenButton data.</p>
+        <FileUpload @file-parsed="handleAnalyzeData" />
         <div class="help-section">
           <a href="#" @click.prevent="showInstructions = !showInstructions">
             {{ showInstructions ? 'Hide Instructions' : 'Show Instructions' }}
@@ -79,7 +79,7 @@
           <li>Click "Download" to save your CSV file to your computer</li>
           <li>Take note of where you save the file</li>
         </ul>
-        <h3>Step 3: Upload Data to GreenButton Advisor</h3>
+        <h3>Step 3: Analyze Data with GreenButton Advisor</h3>
         <ul>
           <li>Navigate to the GreenButton Advisor website</li>
           <li>Click the browse button and select the CSV file you downloaded</li>
@@ -87,7 +87,7 @@
         <h3>Troubleshooting Tips</h3>
         <ul>
           <li><strong>File Format Issues?</strong> Ensure you've selected the CSV format, not XML</li>
-          <li><strong>Data Too Limited?</strong> For best results, upload at least 3 months of usage data</li>
+          <li><strong>Data Too Limited?</strong> For best results, analyze at least 3 months of usage data</li>
           <li><strong>Processing Errors?</strong> Try downloading a fresh copy of your data</li>
         </ul>
       </div>
@@ -298,8 +298,8 @@ const loadSampleData = async () => {
   }
 };
 
-// Handle uploaded data
-const handleUploadData = (parsedData) => {
+// Handle analyzed data
+const handleAnalyzeData = (parsedData) => {
   console.log("Received parsed data:", parsedData);
   processData(parsedData);
 };
@@ -312,7 +312,7 @@ const handleEVEligibilityChange = (eligibility) => {
 // Handle get recommendations
 const handleGetRecommendations = async () => {
   if (usageData.value.length === 0) {
-    error.value = 'Please upload your usage data first to get recommendations';
+    error.value = 'Please analyze your usage data first to get recommendations';
     return;
   }
   

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useMultiPlanCalculator } from '../useMultiPlanCalculator.js'
+import { parseGreenButtonCsv } from '../../utils/csvParser.js'
 
 describe('useMultiPlanCalculator', () => {
   let calculator
@@ -610,6 +611,113 @@ describe('useMultiPlanCalculator', () => {
       originalDatasets.forEach(period => {
         expect(restoredDatasets).toContain(period)
       })
+    })
+  })
+
+  describe('monthsAnalyzed calculation', () => {
+    it('should correctly calculate months analyzed for 3-month period', () => {
+      // Test data spanning 3 months (Jan 1 - Mar 31, 2025)
+      const threeMonthData = [
+        { "Date": "1/1/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "1/15/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "2/1/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "2/15/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "3/1/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "3/31/2025", "Start Time": "12:00 AM", "Consumption": "1.0" }
+      ]
+
+      calculator.processData(threeMonthData)
+      
+      expect(calculator.overallComparison.value).not.toBe(null)
+      expect(calculator.overallComparison.value.monthsAnalyzed).toBe(3)
+      expect(calculator.overallComparison.value.monthsAnalyzed).not.toBe(90)
+    })
+
+    it('should correctly calculate months analyzed for single month period', () => {
+      // Test data spanning 1 month
+      const oneMonthData = [
+        { "Date": "1/1/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "1/15/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "1/31/2025", "Start Time": "12:00 AM", "Consumption": "1.0" }
+      ]
+
+      calculator.processData(oneMonthData)
+      
+      expect(calculator.overallComparison.value).not.toBe(null)
+      expect(calculator.overallComparison.value.monthsAnalyzed).toBe(1)
+    })
+
+    it('should correctly calculate months analyzed for partial month period', () => {
+      // Test data spanning about 2 weeks
+      const partialMonthData = [
+        { "Date": "1/1/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "1/7/2025", "Start Time": "12:00 AM", "Consumption": "1.0" },
+        { "Date": "1/14/2025", "Start Time": "12:00 AM", "Consumption": "1.0" }
+      ]
+
+      calculator.processData(partialMonthData)
+      
+      expect(calculator.overallComparison.value).not.toBe(null)
+      // Should be less than 1 month, but at least 1 for billing purposes
+      expect(calculator.overallComparison.value.monthsAnalyzed).toBe(1)
+    })
+
+    it('should correctly calculate months analyzed using real CSV data', async () => {
+      // Sample CSV data similar to the real sample.csv
+      const csvData = `Name,SAMPLE NAME
+Address,123 Sample Street  San Diego CA 92123
+Account Number,123412341234
+Disclaimer,The information contained in this file is intended for the personal and confidential use of the recipient(s) named above.  Any unauthorized use is prohibited.
+Title,CSV Export Electric Meter(s)
+Resource,Electric
+Meter Number,12341234
+Interval UOM,Minute(s)
+Reading Start,1/1/2025 00:00
+Reading End,3/31/2025 23:45
+Total Duration,90 Days
+Total Usage,1324.19
+UOM,kWh
+Meter Number,Date,Start Time,Duration,Consumption,Generation,Net
+"12341234","1/1/2025","12:00 AM","15","0.0550","0.0000","0.0550"
+"12341234","1/1/2025","12:15 AM","15","0.0550","0.0000","0.0550"
+"12341234","1/15/2025","12:00 AM","15","0.0550","0.0000","0.0550"
+"12341234","2/1/2025","12:00 AM","15","0.0550","0.0000","0.0550"
+"12341234","2/15/2025","12:00 AM","15","0.0550","0.0000","0.0550"
+"12341234","3/1/2025","12:00 AM","15","0.0550","0.0000","0.0550"
+"12341234","3/31/2025","12:00 AM","15","0.0550","0.0000","0.0550"`
+
+      const parsedData = await parseGreenButtonCsv(csvData)
+      calculator.processData(parsedData)
+
+      expect(calculator.overallComparison.value).not.toBe(null)
+      console.log('Actual monthsAnalyzed:', calculator.overallComparison.value.monthsAnalyzed)
+      console.log('Usage data length:', calculator.usageData.value.length)
+      console.log('Unique months:', [...new Set(calculator.usageData.value.map(row => row.month_year_key))])
+      
+      expect(calculator.overallComparison.value.monthsAnalyzed).toBe(3)
+      expect(calculator.overallComparison.value.monthsAnalyzed).not.toBe(90)
+    })
+
+    it('should correctly calculate months analyzed using actual sample.csv file', async () => {
+      // Read the actual sample.csv file
+      const fs = await import('fs/promises')
+      const path = await import('path')
+      
+      const samplePath = path.resolve('./src/assets/sample.csv')
+      const csvData = await fs.readFile(samplePath, 'utf-8')
+      
+      const parsedData = await parseGreenButtonCsv(csvData)
+      calculator.processData(parsedData)
+
+      expect(calculator.overallComparison.value).not.toBe(null)
+      console.log('ACTUAL SAMPLE FILE - monthsAnalyzed:', calculator.overallComparison.value.monthsAnalyzed)
+      console.log('ACTUAL SAMPLE FILE - Usage data length:', calculator.usageData.value.length)
+      console.log('ACTUAL SAMPLE FILE - Unique months count:', new Set(calculator.usageData.value.map(row => row.month_year_key)).size)
+      console.log('ACTUAL SAMPLE FILE - First few month keys:', calculator.usageData.value.slice(0, 10).map(row => row.month_year_key))
+      
+      // This test should fail initially (showing the bug)
+      expect(calculator.overallComparison.value.monthsAnalyzed).toBe(3)
+      expect(calculator.overallComparison.value.monthsAnalyzed).not.toBe(90)
     })
   })
 })

@@ -25,7 +25,7 @@
         {{ recommendationButtonText }}
       </button>
       <p class="recommendation-help">
-        Upload your Green Button data first, then we'll analyze your usage patterns to recommend the best plans for you.
+        Analyze your Green Button data first, then we'll analyze your usage patterns to recommend the best plans for you.
       </p>
     </div>
     
@@ -51,7 +51,7 @@
         <p>{{ plan.description }}</p>
         
         <div class="plan-details">
-          <div class="monthly-charge">
+          <div v-if="plan.monthlyCharge >= 1" class="monthly-charge">
             SDGE Monthly Charge: ${{ plan.monthlyCharge.toFixed(2) }}
           </div>
           
@@ -165,7 +165,7 @@ const canGetRecommendations = computed(() => {
 
 const recommendationButtonText = computed(() => {
   if (!props.hasUsageData) {
-    return 'Upload Data First to Get Recommendations'
+    return 'Analyze Data First to Get Recommendations'
   }
   return 'Get Recommended Plans'
 })

@@ -95,7 +95,7 @@ export const parseGreenButtonFile = (file) => {
     }
 
     if (!file.name.endsWith(".csv")) {
-      reject(new Error("Please upload a CSV file only. See instructions."));
+      reject(new Error("Please select a CSV file only. See instructions."));
       return;
     }
 

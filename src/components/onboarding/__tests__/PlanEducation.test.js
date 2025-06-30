@@ -185,7 +185,7 @@ describe('PlanEducation', () => {
     it('renders the next button', () => {
       const nextBtn = wrapper.find('.next-btn')
       expect(nextBtn.exists()).toBe(true)
-      expect(nextBtn.text()).toContain('Next: Upload Your Data')
+      expect(nextBtn.text()).toContain('Next: Analyze Your Data')
       expect(nextBtn.find('.arrow').text()).toBe('→')
     })
 

@@ -26,7 +26,7 @@
         @next="handleNext"
         @back="handleBack"
         @complete="handleComplete"
-        @data-uploaded="handleDataUploaded"
+        @data-analyzed="handleDataAnalyzed"
         @plans-selected="handlePlansSelected"
         @ev-eligibility-changed="handleEVEligibilityChanged"
         @get-recommendations="handleGetRecommendations"
@@ -56,10 +56,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['complete', 'data-uploaded', 'plans-selected', 'ev-eligibility-changed', 'get-recommendations'])
+const emit = defineEmits(['complete', 'data-analyzed', 'plans-selected', 'ev-eligibility-changed', 'get-recommendations'])
 
 const currentStep = ref(0)
-const uploadedData = ref(null)
+const analyzedData = ref(null)
 const selectedPlans = ref([])
 
 // Watch for recommended plans and update selected plans
@@ -71,7 +71,7 @@ watch(() => props.recommendedPlans, (newRecommended) => {
 
 const steps = [
   { label: 'Learn Plans', component: 'PlanEducation' },
-  { label: 'Upload Data', component: 'DataUpload' },
+  { label: 'Analyze Data', component: 'DataUpload' },
   { label: 'Choose Plans', component: 'PlanSelection' }
 ]
 
@@ -94,7 +94,7 @@ const currentStepProps = computed(() => {
       return {}
     case 2: // PlanSelection
       return {
-        uploadedData: uploadedData.value,
+        analyzedData: analyzedData.value,
         preSelectedPlans: selectedPlans.value,
         isLoading: props.isProcessing,
         evOwnership: props.evOwnership
@@ -122,9 +122,9 @@ const handleBack = () => {
   }
 }
 
-const handleDataUploaded = (data) => {
-  uploadedData.value = data
-  emit('data-uploaded', data)
+const handleDataAnalyzed = (data) => {
+  analyzedData.value = data
+  emit('data-analyzed', data)
   handleNext()
 }
 
@@ -144,7 +144,7 @@ const handleGetRecommendations = () => {
 
 const handleComplete = () => {
   emit('complete', {
-    data: uploadedData.value,
+    data: analyzedData.value,
     plans: selectedPlans.value
   })
 }

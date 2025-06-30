@@ -32,7 +32,13 @@ vi.mock('../composables/useMultiPlanCalculator.js', () => ({
     updatePeriodUsage: mockFunctions.updatePeriodUsage,
     resetUsageToOriginal: mockFunctions.resetUsageToOriginal,
     hasDataBeenModified: { value: false },
-    updating: { value: false }
+    updating: { value: false },
+    hasEV: { value: false },
+    isRecommendationMode: { value: false },
+    setEVEligibility: vi.fn(),
+    getRecommendedPlans: vi.fn(),
+    applyRecommendedPlans: vi.fn(),
+    usageData: { value: [] }
   })
 }))
 
@@ -50,7 +56,7 @@ vi.mock('../components/OnboardingWizard.vue', () => ({
   default: {
     name: 'OnboardingWizard',
     template: '<div data-testid="onboarding-wizard">Onboarding Wizard</div>',
-    emits: ['complete', 'data-uploaded', 'plans-selected']
+    emits: ['complete', 'data-analyzed', 'plans-selected', 'ev-eligibility-changed', 'get-recommendations']
   }
 }))
 
@@ -58,8 +64,8 @@ vi.mock('../components/PlanSelector.vue', () => ({
   default: {
     name: 'PlanSelector',
     template: '<div data-testid="plan-selector">Plan Selector</div>',
-    props: ['availablePlans'],
-    emits: ['planToggled', 'plansSelected']
+    props: ['availablePlans', 'hasUsageData', 'isRecommendationMode'],
+    emits: ['planToggled', 'plansSelected', 'ev-eligibility-changed', 'get-recommendations']
   }
 }))
 
@@ -215,11 +221,11 @@ describe('App.vue', () => {
       expect(wrapper.vm.currentPage).toBe('results')
     })
 
-    it('handles data upload from onboarding', async () => {
+    it('handles data analysis from onboarding', async () => {
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
       
       const onboardingWizard = wrapper.findComponent({ name: 'OnboardingWizard' })
-      await onboardingWizard.vm.$emit('data-uploaded', mockData)
+      await onboardingWizard.vm.$emit('data-analyzed', mockData)
       
       // Should not change page, just pass through the data
       expect(wrapper.vm.currentPage).toBe('onboarding')
@@ -299,11 +305,11 @@ describe('App.vue', () => {
       expect(wrapper.vm.currentPage).toBe('main')
     })
 
-    it('handles file upload data processing', async () => {
+    it('handles file analysis data processing', async () => {
       const mockParsedData = { data: [{ usage: 100, date: '2024-01-01' }] }
       
       // Simulate the event by calling the handler directly
-      wrapper.vm.handleUploadData(mockParsedData)
+      wrapper.vm.handleAnalyzeData(mockParsedData)
       
       expect(mockComposable.processData).toHaveBeenCalledWith(mockParsedData)
     })

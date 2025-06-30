@@ -5,37 +5,8 @@
       <p class="subtitle">Based on your usage data, we'll help you select the best plans to compare</p>
     </div>
 
-    <!-- EV Eligibility Question -->
-    <div class="ev-eligibility">
-      <label class="ev-checkbox">
-        <input 
-          type="checkbox" 
-          v-model="hasEV" 
-          @change="handleEVEligibilityChange"
-        />
-        I own an electric vehicle registered in California
-      </label>
-      <p class="ev-help">This makes you eligible for the EV-TOU-5 plan with special overnight rates</p>
-    </div>
-
-    <!-- Get Recommendations Button -->
-    <div class="recommendation-section">
-      <button 
-        @click="getSmartRecommendations" 
-        class="recommendation-btn"
-        :disabled="!uploadedData || isLoading"
-      >
-        <span v-if="!isLoading" class="btn-icon">🧠</span>
-        <span v-else class="btn-icon loading">⏳</span>
-        {{ isLoading ? 'Analyzing Your Usage...' : 'Get Smart Recommendations' }}
-      </button>
-      <p class="recommendation-help">
-        We'll analyze your usage patterns and recommend the 2 best plans for you
-      </p>
-    </div>
-
     <!-- Usage Summary -->
-    <div v-if="uploadedData" class="usage-summary">
+    <div v-if="analyzedData" class="usage-summary">
       <h3>Your Usage Summary</h3>
       <div class="summary-cards">
         <div class="summary-card">
@@ -65,6 +36,35 @@
             <div class="card-value">{{ peakUsagePercentage.toFixed(0) }}%</div>
             <div class="card-label">Peak Usage</div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Get Recommendations Button -->
+      <div class="recommendation-section">
+        <button 
+          @click="getSmartRecommendations" 
+          class="recommendation-btn"
+          :disabled="!analyzedData || isLoading"
+        >
+          <span v-if="!isLoading" class="btn-icon">🧠</span>
+          <span v-else class="btn-icon loading">⏳</span>
+          {{ isLoading ? 'Analyzing Your Usage...' : 'Get Smart Recommendations' }}
+        </button>
+        <p class="recommendation-help">
+          We'll analyze your usage patterns and recommend the 2 best plans for you
+        </p>
+        
+        <!-- EV Eligibility Question -->
+        <div class="ev-eligibility">
+          <label class="ev-checkbox">
+            <input 
+              type="checkbox" 
+              v-model="hasEV" 
+              @change="handleEVEligibilityChange"
+            />
+            I own an electric vehicle registered in California
+          </label>
+          <p class="ev-help">This makes you eligible for the EV-TOU-5 plan with special overnight rates</p>
         </div>
       </div>
     </div>
@@ -123,7 +123,9 @@
           
           <div class="plan-header">
             <h4>{{ plan.type }}</h4>
-            <div class="monthly-charge">${{ plan.monthlyCharge.toFixed(2) }}/mo</div>
+            <div v-if="plan.monthlyCharge >= 1" class="monthly-charge">
+              ${{ plan.monthlyCharge.toFixed(2) }}/mo SDGE fee
+            </div>
           </div>
           
           <p class="plan-name">{{ plan.name }}</p>
@@ -191,7 +193,7 @@
     <div class="navigation">
       <button @click="$emit('back')" class="back-btn">
         <span class="arrow">←</span>
-        Back to Data Upload
+        Back to Data Analysis
       </button>
       
       <button 
@@ -211,7 +213,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { SDGE_PLANS } from '../../utils/sdgeTariffs.js'
 
 const props = defineProps({
-  uploadedData: Object,
+  analyzedData: Object,
   preSelectedPlans: {
     type: Array,
     default: () => []
@@ -232,20 +234,7 @@ const selectedPlans = ref([...props.preSelectedPlans])
 const hasEV = ref(props.evOwnership)
 const smartRecommendationsUsed = ref(false)
 
-// Watch for changes in EV ownership from parent
-watch(() => props.evOwnership, (newValue) => {
-  hasEV.value = newValue
-  console.log('PlanSelection: EV ownership changed to:', newValue)
-}, { immediate: true })
-
-// Watch for changes in preSelectedPlans (from parent recommendations)
-watch(() => props.preSelectedPlans, (newPlans) => {
-  if (newPlans && newPlans.length > 0) {
-    selectedPlans.value = [...newPlans]
-    smartRecommendationsUsed.value = true
-    console.log('PlanSelection: Updated selectedPlans from props:', selectedPlans.value)
-  }
-}, { immediate: true, deep: true })
+// We'll move the watchers after the function definitions
 
 const availablePlans = computed(() => {
   const plans = Object.entries(SDGE_PLANS).map(([planKey, plan]) => ({
@@ -267,22 +256,29 @@ const selectedPlanNames = computed(() => selectedPlans.value)
 
 // Usage analysis
 const totalUsage = computed(() => {
-  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
-  return props.uploadedData.reduce((sum, row) => {
+  if (!props.analyzedData || !Array.isArray(props.analyzedData)) return 0
+  return props.analyzedData.reduce((sum, row) => {
     const consumption = parseFloat(row.Consumption || row.consumption || 0)
     return sum + (isNaN(consumption) ? 0 : consumption)
   }, 0)
 })
 
 const monthsAnalyzed = computed(() => {
-  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
+  if (!props.analyzedData || !Array.isArray(props.analyzedData)) return 0
   const months = new Set()
-  props.uploadedData.forEach(row => {
+  props.analyzedData.forEach(row => {
     const dateStr = row.Date || row.date
     if (dateStr) {
-      // Handle various date formats and extract year-month
-      const month = dateStr.substring(0, 7) // Assumes YYYY-MM format or MM/DD/YYYY
-      months.add(month)
+      try {
+        // Parse the date properly to extract year-month
+        const [month, day, year] = dateStr.split('/')
+        if (month && year) {
+          const yearMonth = `${year}-${String(month).padStart(2, '0')}`
+          months.add(yearMonth)
+        }
+      } catch (e) {
+        console.warn('Could not parse date for month calculation:', dateStr)
+      }
     }
   })
   return months.size
@@ -295,10 +291,10 @@ const averageMonthlyUsage = computed(() => {
 
 // For peak usage calculation, we need to estimate since we don't have processed time periods yet
 const peakUsagePercentage = computed(() => {
-  if (!props.uploadedData || !Array.isArray(props.uploadedData)) return 0
+  if (!props.analyzedData || !Array.isArray(props.analyzedData)) return 0
   
   // Estimate peak usage by time of day (4PM - 9PM weekdays roughly)
-  const peakUsage = props.uploadedData.reduce((sum, row) => {
+  const peakUsage = props.analyzedData.reduce((sum, row) => {
     const timeStr = row['Start Time'] || row.startTime || ''
     const consumption = parseFloat(row.Consumption || row.consumption || 0)
     
@@ -319,7 +315,7 @@ const peakUsagePercentage = computed(() => {
 const recommendations = ref([])
 
 const generateRecommendations = () => {
-  if (!props.uploadedData?.data) return
+  if (!props.analyzedData) return
 
   const avgMonthly = averageMonthlyUsage.value
   const peakPercent = peakUsagePercentage.value
@@ -369,7 +365,23 @@ const generateRecommendations = () => {
     })
   }
 
+  // Recommend EV plan if user has an EV
+  if (hasEV.value) {
+    recs.push({
+      planType: 'EV-TOU-5',
+      reason: 'Optimized for electric vehicle owners with overnight charging rates',
+      highlights: [
+        'Special super off-peak rates for EV charging',
+        'Designed for California EV owners',
+        'Best for overnight charging schedules'
+      ],
+      featured: true,
+      potentialSavings: Math.round(avgMonthly * 0.20)
+    })
+  }
+
   recommendations.value = recs.slice(0, 3) // Limit to 3 recommendations
+  console.log('PlanSelection: Generated recommendations:', recommendations.value)
 }
 
 const isRecommended = (planType) => {
@@ -433,10 +445,15 @@ const getPositionClass = (planType) => {
 
 const handleEVEligibilityChange = () => {
   emit('ev-eligibility-changed', hasEV.value)
+  // Regenerate recommendations when EV eligibility changes
+  generateRecommendations()
 }
 
 const getSmartRecommendations = async () => {
-  if (!props.uploadedData) return
+  if (!props.analyzedData) return
+  
+  // Regenerate recommendations with current data and EV status
+  generateRecommendations()
   
   // Emit to parent to handle the recommendation logic
   emit('get-recommendations')
@@ -469,6 +486,25 @@ onMounted(() => {
     }
   }
 })
+
+// Watch for changes in EV ownership from parent
+watch(() => props.evOwnership, (newValue) => {
+  hasEV.value = newValue
+  console.log('PlanSelection: EV ownership changed to:', newValue)
+  // Regenerate recommendations when EV ownership changes
+  if (props.analyzedData) {
+    generateRecommendations()
+  }
+}, { immediate: true })
+
+// Watch for changes in preSelectedPlans (from parent recommendations)
+watch(() => props.preSelectedPlans, (newPlans) => {
+  if (newPlans && newPlans.length > 0) {
+    selectedPlans.value = [...newPlans]
+    smartRecommendationsUsed.value = true
+    console.log('PlanSelection: Updated selectedPlans from props:', selectedPlans.value)
+  }
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
@@ -756,12 +792,13 @@ onMounted(() => {
 }
 
 .monthly-charge {
-  background: var(--link-color);
-  color: white;
+  background: var(--border-color);
+  color: var(--text-color);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.8em;
-  font-weight: 600;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .plan-name {
@@ -898,7 +935,7 @@ onMounted(() => {
 
 /* EV eligibility and recommendations */
 .ev-eligibility {
-  margin: 30px 0;
+  margin: 20px 0 0 0;
   padding: 20px;
   background: var(--button-bg);
   border: 1px solid var(--border-color);
@@ -931,7 +968,7 @@ onMounted(() => {
 }
 
 .recommendation-section {
-  margin: 30px 0;
+  margin: 30px 0 0 0;
   text-align: center;
 }
 

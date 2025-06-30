@@ -41,8 +41,8 @@ const faqs = [
     answer: "You can download your Green Button data from your SDGE account dashboard. Go to the 'Energy Usage' section, find the 'Green Button' option, and select 'Download My Data' with hourly intervals. For detailed instructions, click 'Show Instructions' on our main page."
   },
   {
-    question: "How much data should I upload?",
-    answer: "For the most accurate results, we recommend uploading at least 3 months of hourly interval data. This provides enough usage patterns to make reliable comparisons between rate plans."
+    question: "How much data should I analyze?",
+    answer: "For the most accurate results, we recommend analyzing at least 3 months of hourly interval data. This provides enough usage patterns to make reliable comparisons between rate plans."
   },
   {
     question: "Are my energy usage data and results saved?",
@@ -57,8 +57,8 @@ const faqs = [
     answer: "Currently, the Green Button Advisor compares SDGE's EV-TOU-5 and DR-TOU-1 rate plans. We may add more plans in future updates."
   },
   {
-    question: "I'm getting an error when uploading my file. What should I do?",
-    answer: "Make sure you're uploading a CSV file downloaded from SDGE's Green Button 'Download My Data' option with hourly intervals. XML files or data from other sources may not work properly. If you continue to have issues, try downloading a fresh copy of your data from SDGE."
+    question: "I'm getting an error when analyzing my file. What should I do?",
+    answer: "Make sure you're analyzing a CSV file downloaded from SDGE's Green Button 'Download My Data' option with hourly intervals. XML files or data from other sources may not work properly. If you continue to have issues, try downloading a fresh copy of your data from SDGE."
   },
   {
     question: "How do I switch to a new rate plan if I find potential savings?",

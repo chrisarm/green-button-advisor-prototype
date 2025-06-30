@@ -18,7 +18,7 @@ vi.mock('../onboarding/DataUpload.vue', () => ({
   default: {
     name: 'DataUpload',
     template: '<div data-testid="data-upload">Data Upload Component</div>',
-    emits: ['back', 'data-uploaded']
+    emits: ['back', 'data-analyzed']
   }
 }))
 
@@ -27,7 +27,7 @@ vi.mock('../onboarding/PlanSelection.vue', () => ({
     name: 'PlanSelection',
     template: '<div data-testid="plan-selection">Plan Selection Component</div>',
     emits: ['back', 'plans-selected'],
-    props: ['uploadedData', 'preSelectedPlans']
+    props: ['analyzedData', 'preSelectedPlans', 'isLoading', 'evOwnership']
   }
 }))
 
@@ -55,7 +55,7 @@ describe('OnboardingWizard', () => {
       expect(stepIndicators).toHaveLength(3)
       
       const stepLabels = stepIndicators.map(step => step.find('.step-label').text())
-      expect(stepLabels).toEqual(['Learn Plans', 'Upload Data', 'Choose Plans'])
+      expect(stepLabels).toEqual(['Learn Plans', 'Analyze Data', 'Choose Plans'])
     })
 
     it('shows first step as active', () => {
@@ -99,22 +99,22 @@ describe('OnboardingWizard', () => {
       expect(wrapper.find('[data-testid="plan-education"]').exists()).toBe(true)
     })
 
-    it('advances to plan selection when data is uploaded', async () => {
+    it('advances to plan selection when data is analyzed', async () => {
       // Navigate to step 2
       const planEducation = wrapper.findComponent({ name: 'PlanEducation' })
       await planEducation.vm.$emit('next')
       
-      // Upload data
+      // Analyze data
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
       const dataUpload = wrapper.findComponent({ name: 'DataUpload' })
-      await dataUpload.vm.$emit('data-uploaded', mockData)
+      await dataUpload.vm.$emit('data-analyzed', mockData)
       
       expect(wrapper.findComponent({ name: 'PlanSelection' }).exists()).toBe(true)
       expect(wrapper.find('[data-testid="plan-selection"]').exists()).toBe(true)
       
       // Check that data is passed to plan selection
       const planSelection = wrapper.findComponent({ name: 'PlanSelection' })
-      expect(planSelection.props('uploadedData')).toEqual(mockData)
+      expect(planSelection.props('analyzedData')).toEqual(mockData)
     })
 
     it('updates progress percentage as steps advance', async () => {
@@ -129,25 +129,25 @@ describe('OnboardingWizard', () => {
       
       // Navigate to step 3 - 100%
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       progressFill = wrapper.find('.progress-fill')
       expect(progressFill.attributes('style')).toContain('width: 100%')
     })
   })
 
   describe('Data Flow', () => {
-    it('stores uploaded data and passes it to plan selection', async () => {
+    it('stores analyzed data and passes it to plan selection', async () => {
       const mockData = { data: [{ usage: 100, date: '2024-01-01', timePeriod: 'Off-Peak' }] }
       
       // Navigate to step 2
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
       
-      // Upload data
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      // Analyze data
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       
       // Check that plan selection receives the data
       const planSelection = wrapper.findComponent({ name: 'PlanSelection' })
-      expect(planSelection.props('uploadedData')).toEqual(mockData)
+      expect(planSelection.props('analyzedData')).toEqual(mockData)
     })
 
     it('stores selected plans and passes them through props', async () => {
@@ -156,7 +156,7 @@ describe('OnboardingWizard', () => {
       
       // Navigate through steps
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       
       // Select plans
       await wrapper.findComponent({ name: 'PlanSelection' }).vm.$emit('plans-selected', mockPlans)
@@ -165,14 +165,14 @@ describe('OnboardingWizard', () => {
       expect(wrapper.vm.selectedPlans).toEqual(mockPlans)
     })
 
-    it('emits data-uploaded event when data is uploaded', async () => {
+    it('emits data-analyzed event when data is analyzed', async () => {
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
       
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       
-      expect(wrapper.emitted('data-uploaded')).toBeTruthy()
-      expect(wrapper.emitted('data-uploaded')[0]).toEqual([mockData])
+      expect(wrapper.emitted('data-analyzed')).toBeTruthy()
+      expect(wrapper.emitted('data-analyzed')[0]).toEqual([mockData])
     })
 
     it('emits plans-selected event when plans are selected', async () => {
@@ -181,7 +181,7 @@ describe('OnboardingWizard', () => {
       
       // Navigate through steps
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       await wrapper.findComponent({ name: 'PlanSelection' }).vm.$emit('plans-selected', mockPlans)
       
       expect(wrapper.emitted('plans-selected')).toBeTruthy()
@@ -194,7 +194,7 @@ describe('OnboardingWizard', () => {
       
       // Complete the wizard flow
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       await wrapper.findComponent({ name: 'PlanSelection' }).vm.$emit('plans-selected', mockPlans)
       
       expect(wrapper.emitted('complete')).toBeTruthy()
@@ -217,7 +217,7 @@ describe('OnboardingWizard', () => {
       // Navigate to last step
       await wrapper.findComponent({ name: 'PlanEducation' }).vm.$emit('next')
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       
       // Try to go next from last step (should not crash)
       const currentStep = wrapper.vm.currentStep
@@ -243,14 +243,16 @@ describe('OnboardingWizard', () => {
       wrapper.vm.currentStep = 1
       expect(wrapper.vm.currentStepProps).toEqual({})
       
-      // Step 3 - needs uploaded data and preselected plans
+      // Step 3 - needs analyzed data and preselected plans
       wrapper.vm.currentStep = 2
-      wrapper.vm.uploadedData = { data: [{ usage: 100 }] }
+      wrapper.vm.analyzedData = { data: [{ usage: 100 }] }
       wrapper.vm.selectedPlans = ['DR']
       
       expect(wrapper.vm.currentStepProps).toEqual({
-        uploadedData: { data: [{ usage: 100 }] },
-        preSelectedPlans: ['DR']
+        analyzedData: { data: [{ usage: 100 }] },
+        preSelectedPlans: ['DR'],
+        isLoading: false,
+        evOwnership: false
       })
     })
   })
@@ -267,7 +269,7 @@ describe('OnboardingWizard', () => {
       
       // Complete step 2
       const mockData = { data: [{ usage: 100, date: '2024-01-01' }] }
-      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-uploaded', mockData)
+      await wrapper.findComponent({ name: 'DataUpload' }).vm.$emit('data-analyzed', mockData)
       
       expect(stepIndicators[0].classes()).toContain('completed')
       expect(stepIndicators[1].classes()).toContain('completed')

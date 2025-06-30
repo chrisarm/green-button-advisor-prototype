@@ -39,8 +39,8 @@ describe('Onboarding Integration Flow', () => {
     })
   })
 
-  describe('Complete File Upload Flow', () => {
-    it('completes the full flow from start to finish with file upload', async () => {
+  describe('Complete File Analysis Flow', () => {
+    it('completes the full flow from start to finish with file analysis', async () => {
       // Step 1: Plan Education
       expect(wrapper.findComponent(PlanEducation).exists()).toBe(true)
       expect(wrapper.find('.step-indicator.active').text()).toContain('Learn Plans')
@@ -55,7 +55,7 @@ describe('Onboarding Integration Flow', () => {
       expect(wrapper.findAll('.step-indicator')[1].classes()).toContain('active')
       expect(wrapper.findAll('.step-indicator')[0].classes()).toContain('completed')
       
-      // Simulate file upload
+      // Simulate file analysis
       const mockParsedData = {
         data: [
           { usage: 100, date: '2024-01-01', timePeriod: 'Off-Peak' },
@@ -67,7 +67,7 @@ describe('Onboarding Integration Flow', () => {
       const dataUpload = wrapper.findComponent(DataUpload)
       const mockFile = new File(['test,data'], 'test.csv', { type: 'text/csv' })
       
-      // Set up file upload
+      // Set up file analysis
       dataUpload.vm.selectedFile = mockFile
       await dataUpload.vm.$nextTick()
       
@@ -84,7 +84,7 @@ describe('Onboarding Integration Flow', () => {
       
       // Verify data was passed
       const planSelection = wrapper.findComponent(PlanSelection)
-      expect(planSelection.props('uploadedData')).toEqual(mockParsedData)
+      expect(planSelection.props('analyzedData')).toEqual(mockParsedData)
       
       // Select plans
       const planCards = planSelection.findAll('.plan-card')
@@ -97,7 +97,7 @@ describe('Onboarding Integration Flow', () => {
       
       // Verify completion events
       expect(wrapper.emitted('complete')).toBeTruthy()
-      expect(wrapper.emitted('data-uploaded')).toBeTruthy()
+      expect(wrapper.emitted('data-analyzed')).toBeTruthy()
       expect(wrapper.emitted('plans-selected')).toBeTruthy()
       
       const completeEvent = wrapper.emitted('complete')[0][0]
@@ -105,12 +105,12 @@ describe('Onboarding Integration Flow', () => {
       expect(completeEvent.plans).toHaveLength(2)
     })
 
-    it('handles file upload errors gracefully', async () => {
-      // Navigate to data upload step
+    it('handles file analysis errors gracefully', async () => {
+      // Navigate to data analysis step
       const planEducation = wrapper.findComponent(PlanEducation)
       await planEducation.find('.next-btn').trigger('click')
       
-      // Simulate file upload error
+      // Simulate file analysis error
       const errorMessage = 'Invalid file format'
       mockParseGreenButtonFile.mockRejectedValue(new Error(errorMessage))
       
@@ -126,7 +126,7 @@ describe('Onboarding Integration Flow', () => {
       // Wait for async processing
       await new Promise(resolve => setTimeout(resolve, 10))
       
-      // Should remain on data upload step with error
+      // Should remain on data analysis step with error
       expect(wrapper.findComponent(DataUpload).exists()).toBe(true)
       expect(dataUpload.vm.uploadError).toContain(errorMessage)
       expect(dataUpload.find('.upload-error').exists()).toBe(true)
@@ -138,7 +138,7 @@ describe('Onboarding Integration Flow', () => {
 
   describe('Complete Sample Data Flow', () => {
     it('completes the full flow with sample data', async () => {
-      // Navigate to data upload step
+      // Navigate to data analysis step
       const planEducation = wrapper.findComponent(PlanEducation)
       await planEducation.find('.next-btn').trigger('click')
       
@@ -176,7 +176,7 @@ describe('Onboarding Integration Flow', () => {
       expect(wrapper.findComponent(PlanSelection).exists()).toBe(true)
       
       const planSelection = wrapper.findComponent(PlanSelection)
-      expect(planSelection.props('uploadedData')).toEqual(mockParsedData)
+      expect(planSelection.props('analyzedData')).toEqual(mockParsedData)
       
       // Complete plan selection
       const planCards = planSelection.findAll('.plan-card')
@@ -193,7 +193,7 @@ describe('Onboarding Integration Flow', () => {
     })
 
     it('handles sample data loading errors', async () => {
-      // Navigate to data upload step
+      // Navigate to data analysis step
       const planEducation = wrapper.findComponent(PlanEducation)
       await planEducation.find('.next-btn').trigger('click')
       
@@ -212,7 +212,7 @@ describe('Onboarding Integration Flow', () => {
       // Wait for async processing
       await new Promise(resolve => setTimeout(resolve, 10))
       
-      // Should show error and remain on data upload step
+      // Should show error and remain on data analysis step
       expect(dataUpload.vm.uploadError).toContain('Failed to load sample data')
       expect(wrapper.findComponent(PlanSelection).exists()).toBe(false)
     })
@@ -278,8 +278,8 @@ describe('Onboarding Integration Flow', () => {
   })
 
   describe('Data Persistence', () => {
-    it('retains uploaded data when navigating between steps', async () => {
-      // Navigate to data upload and upload data
+    it('retains analyzed data when navigating between steps', async () => {
+      // Navigate to data analysis and analyze data
       await wrapper.findComponent(PlanEducation).find('.next-btn').trigger('click')
       
       const mockParsedData = { data: [{ usage: 100, date: '2024-01-01' }] }
@@ -295,17 +295,17 @@ describe('Onboarding Integration Flow', () => {
       
       // Should be on plan selection with data
       let planSelection = wrapper.findComponent(PlanSelection)
-      expect(planSelection.props('uploadedData')).toEqual(mockParsedData)
+      expect(planSelection.props('analyzedData')).toEqual(mockParsedData)
       
-      // Navigate back to data upload
+      // Navigate back to data analysis
       await planSelection.find('.back-btn').trigger('click')
       
-      // Should be back on data upload
+      // Should be back on data analysis
       expect(wrapper.findComponent(DataUpload).exists()).toBe(true)
       
-      // The wizard should remember the uploaded data and auto-advance
+      // The wizard should remember the analyzed data and auto-advance
       // when we process the same file again, or we can simulate the data being retained
-      expect(wrapper.vm.uploadedData).toEqual(mockParsedData)
+      expect(wrapper.vm.analyzedData).toEqual(mockParsedData)
     })
 
     it('retains selected plans when completing and then navigating', async () => {
@@ -355,7 +355,7 @@ describe('Onboarding Integration Flow', () => {
   })
 
   describe('Smart Recommendations Integration', () => {
-    it('generates appropriate recommendations based on uploaded usage data', async () => {
+    it('generates appropriate recommendations based on analyzed usage data', async () => {
       // Navigate to plan selection with specific usage pattern
       await wrapper.findComponent(PlanEducation).find('.next-btn').trigger('click')
       

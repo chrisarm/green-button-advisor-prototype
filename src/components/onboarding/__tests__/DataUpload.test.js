@@ -30,7 +30,7 @@ describe('DataUpload', () => {
 
   describe('Initial Render', () => {
     it('renders the main title and subtitle', () => {
-      expect(wrapper.find('h2').text()).toBe('Upload Your Energy Usage Data')
+      expect(wrapper.find('h2').text()).toBe('Analyze Your Energy Usage Data')
       expect(wrapper.find('.subtitle').text()).toContain('analyze your actual usage')
     })
 
@@ -39,7 +39,7 @@ describe('DataUpload', () => {
       expect(optionCards).toHaveLength(2)
       
       const cardTitles = optionCards.map(card => card.find('h3').text())
-      expect(cardTitles).toEqual(['Upload Your Data', 'Try Sample Data'])
+      expect(cardTitles).toEqual(['Analyze Your Data', 'Try Sample Data'])
     })
 
     it('starts with file upload method selected by default', () => {
@@ -236,8 +236,8 @@ describe('DataUpload', () => {
       await new Promise(resolve => setTimeout(resolve, 0))
       
       expect(mockParseGreenButtonFile).toHaveBeenCalledWith(file)
-      expect(wrapper.emitted('data-uploaded')).toBeTruthy()
-      expect(wrapper.emitted('data-uploaded')[0]).toEqual([mockParsedData])
+      expect(wrapper.emitted('data-analyzed')).toBeTruthy()
+      expect(wrapper.emitted('data-analyzed')[0]).toEqual([mockParsedData])
     })
 
     it('handles file processing errors', async () => {
@@ -315,7 +315,7 @@ describe('DataUpload', () => {
       
       expect(global.fetch).toHaveBeenCalled()
       expect(mockParseGreenButtonFile).toHaveBeenCalled()
-      expect(wrapper.emitted('data-uploaded')).toBeTruthy()
+      expect(wrapper.emitted('data-analyzed')).toBeTruthy()
     })
 
     it('handles sample data loading errors', async () => {
@@ -402,7 +402,7 @@ describe('DataUpload', () => {
       await wrapper.vm.$nextTick()
       
       expect(wrapper.find('.upload-error').exists()).toBe(true)
-      expect(wrapper.find('.upload-error h3').text()).toBe('Upload Error')
+      expect(wrapper.find('.upload-error h3').text()).toBe('Analysis Error')
       expect(wrapper.find('.upload-error p').text()).toBe('Test error message')
     })
 

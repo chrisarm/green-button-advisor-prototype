@@ -1,7 +1,7 @@
 <template>
   <div class="data-upload">
     <div class="header">
-      <h2>Upload Your Energy Usage Data</h2>
+      <h2>Analyze Your Energy Usage Data</h2>
       <p class="subtitle">We'll analyze your actual usage to find the best plan for you</p>
     </div>
 
@@ -9,26 +9,26 @@
     <div class="upload-options">
       <div class="option-card" :class="{ active: uploadMethod === 'file' }" @click="uploadMethod = 'file'">
         <div class="option-icon">📁</div>
-        <h3>Upload Your Data</h3>
-        <p>Upload your SDGE Green Button CSV file for the most accurate analysis</p>
+        <h3>Analyze Your Data</h3>
+        <p>Select your SDGE Green Button CSV file for the most accurate analysis</p>
         <div class="option-badge">Recommended</div>
       </div>
       
       <div class="option-card" :class="{ active: uploadMethod === 'sample' }" @click="uploadMethod = 'sample'">
         <div class="option-icon">📊</div>
         <h3>Try Sample Data</h3>
-        <p>See how the comparison works with example data before uploading yours</p>
+        <p>See how the comparison works with example data before analyzing yours</p>
         <div class="option-badge sample">Demo</div>
       </div>
     </div>
 
-    <!-- File Upload Section -->
+    <!-- File Analysis Section -->
     <div v-if="uploadMethod === 'file'" class="upload-section">
       <div class="upload-area" 
            :class="{ 
              'drag-over': isDragOver, 
              'has-file': selectedFile,
-             'uploading': isUploading,
+             'uploading': isAnalyzing,
              'error': uploadError 
            }"
            @drop="handleDrop"
@@ -44,7 +44,7 @@
           style="display: none"
         />
         
-        <div v-if="!selectedFile && !isUploading" class="upload-prompt">
+        <div v-if="!selectedFile && !isAnalyzing" class="upload-prompt">
           <div class="upload-icon">📤</div>
           <h3>Drop your CSV file here</h3>
           <p>or <span class="link-text">click to browse</span></p>
@@ -53,7 +53,7 @@
           </div>
         </div>
         
-        <div v-if="selectedFile && !isUploading" class="file-preview">
+        <div v-if="selectedFile && !isAnalyzing" class="file-preview">
           <div class="file-icon">📄</div>
           <div class="file-info">
             <div class="file-name">{{ selectedFile.name }}</div>
@@ -62,21 +62,21 @@
           <button @click.stop="clearFile" class="clear-btn">✕</button>
         </div>
         
-        <div v-if="isUploading" class="upload-progress">
+        <div v-if="isAnalyzing" class="upload-progress">
           <div class="spinner"></div>
-          <h3>Processing your data...</h3>
+          <h3>Analyzing your data...</h3>
           <p>This may take a few moments</p>
         </div>
         
         <div v-if="uploadError" class="upload-error">
           <div class="error-icon">⚠️</div>
-          <h3>Upload Error</h3>
+          <h3>Analysis Error</h3>
           <p>{{ uploadError }}</p>
           <button @click="clearError" class="retry-btn">Try Again</button>
         </div>
       </div>
       
-      <div v-if="selectedFile && !isUploading && !uploadError" class="upload-actions">
+      <div v-if="selectedFile && !isAnalyzing && !uploadError" class="upload-actions">
         <button @click="processFile" class="process-btn">
           Analyze This File
           <span class="arrow">→</span>
@@ -150,10 +150,10 @@
         </div>
       </div>
       
-      <button @click="loadSampleData" class="sample-btn" :disabled="isUploading">
-        <span v-if="!isUploading">Use Sample Data</span>
+      <button @click="loadSampleData" class="sample-btn" :disabled="isAnalyzing">
+        <span v-if="!isAnalyzing">Use Sample Data</span>
         <span v-else>Loading...</span>
-        <span v-if="!isUploading" class="arrow">→</span>
+        <span v-if="!isAnalyzing" class="arrow">→</span>
       </button>
     </div>
 
@@ -172,11 +172,11 @@ import { ref } from 'vue'
 import { parseGreenButtonFile } from '../../utils/csvParser.js'
 import sampleCsvPath from '../../assets/sample.csv?url'
 
-const emit = defineEmits(['back', 'data-uploaded'])
+const emit = defineEmits(['back', 'data-analyzed'])
 
 const uploadMethod = ref('file')
 const selectedFile = ref(null)
-const isUploading = ref(false)
+const isAnalyzing = ref(false)
 const uploadError = ref('')
 const isDragOver = ref(false)
 const showInstructions = ref(false)
@@ -203,7 +203,7 @@ const handleDrop = (e) => {
 }
 
 const triggerFileInput = () => {
-  if (!isUploading.value) {
+  if (!isAnalyzing.value) {
     fileInput.value.click()
   }
 }
@@ -253,21 +253,21 @@ const formatFileSize = (bytes) => {
 const processFile = async () => {
   if (!selectedFile.value) return
   
-  isUploading.value = true
+  isAnalyzing.value = true
   uploadError.value = ''
   
   try {
     const parsedData = await parseGreenButtonFile(selectedFile.value)
-    emit('data-uploaded', parsedData)
+    emit('data-analyzed', parsedData)
   } catch (error) {
     console.error('File processing error:', error)
     uploadError.value = error.message || 'Failed to process the file. Please check that it\'s a valid SDGE Green Button CSV file.'
-    isUploading.value = false
+    isAnalyzing.value = false
   }
 }
 
 const loadSampleData = async () => {
-  isUploading.value = true
+  isAnalyzing.value = true
   uploadError.value = ''
   
   try {
@@ -282,11 +282,11 @@ const loadSampleData = async () => {
     const file = new File([blob], 'sample-data.csv', { type: 'text/csv' })
     
     const parsedData = await parseGreenButtonFile(file)
-    emit('data-uploaded', parsedData)
+    emit('data-analyzed', parsedData)
   } catch (error) {
     console.error('Sample data loading error:', error)
-    uploadError.value = 'Failed to load sample data. Please try again or upload your own file.'
-    isUploading.value = false
+    uploadError.value = 'Failed to load sample data. Please try again or analyze your own file.'
+    isAnalyzing.value = false
   }
 }
 </script>

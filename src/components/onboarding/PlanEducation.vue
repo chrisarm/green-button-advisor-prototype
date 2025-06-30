@@ -68,10 +68,16 @@
         >
           <div class="plan-header">
             <h4>{{ plan.type }}</h4>
-            <div class="monthly-charge">${{ plan.monthlyCharge.toFixed(2) }}/month</div>
+            <div v-if="plan.monthlyCharge >= 1" class="monthly-charge">
+              ${{ plan.monthlyCharge.toFixed(2) }}/month SDGE fee
+            </div>
           </div>
           <p class="plan-name">{{ plan.name }}</p>
           <p class="plan-desc">{{ plan.description }}</p>
+          
+          <div class="plan-type-badge">
+            {{ plan.planType === 'time_of_use' ? 'Time of Use' : 'Tiered' }}
+          </div>
           
           <!-- Rate Structure Visualization -->
           <div class="rate-structure">
@@ -142,7 +148,7 @@
     <div class="action-section">
       <p class="action-text">Ready to see how these plans compare with your actual usage data?</p>
       <button @click="$emit('next')" class="next-btn">
-        Next: Upload Your Data
+        Next: Analyze Your Data
         <span class="arrow">→</span>
       </button>
     </div>
@@ -158,10 +164,10 @@ defineEmits(['next'])
 const selectedType = ref('tiered')
 
 const planData = computed(() => {
-  return Object.entries(SDGE_PLANS).map(([type, plan]) => ({
-    type,
+  return Object.entries(SDGE_PLANS).map(([planKey, plan]) => ({
     ...plan,
-    planType: plan.type
+    type: planKey,  // The plan identifier (DR, TOU-DR1, etc.)
+    planType: plan.type  // The internal type (tiered, time_of_use)
   }))
 })
 
@@ -303,12 +309,13 @@ const filteredPlans = computed(() => {
 }
 
 .monthly-charge {
-  background: var(--success-color);
-  color: white;
+  background: var(--border-color);
+  color: var(--text-color);
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 0.9em;
-  font-weight: 600;
+  font-size: 0.8em;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .plan-name {
@@ -321,7 +328,18 @@ const filteredPlans = computed(() => {
   font-size: 0.9em;
   color: var(--text-color);
   opacity: 0.8;
-  margin: 0 0 15px 0;
+  margin: 0 0 10px 0;
+}
+
+.plan-type-badge {
+  display: inline-block;
+  background: var(--border-color);
+  color: var(--text-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  margin-bottom: 15px;
+  font-weight: 500;
 }
 
 .rate-structure h5 {

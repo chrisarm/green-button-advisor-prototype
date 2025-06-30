@@ -4,19 +4,17 @@ import PlanSelection from '../PlanSelection.vue'
 
 describe('PlanSelection', () => {
   let wrapper
-  const mockUploadedData = {
-    data: [
-      { usage: 100, date: '2024-01-01', timePeriod: 'Off-Peak' },
-      { usage: 200, date: '2024-01-02', timePeriod: 'On-Peak' },
-      { usage: 150, date: '2024-02-01', timePeriod: 'Off-Peak' },
-      { usage: 180, date: '2024-02-02', timePeriod: 'On-Peak' }
-    ]
-  }
+  const mockAnalyzedData = [
+    { Consumption: 100, Date: '2024-01-01', 'Start Time': '2:00 PM', timePeriod: 'Off-Peak' },
+    { Consumption: 200, Date: '2024-01-02', 'Start Time': '5:00 PM', timePeriod: 'On-Peak' },
+    { Consumption: 150, Date: '2024-02-01', 'Start Time': '2:00 PM', timePeriod: 'Off-Peak' },
+    { Consumption: 180, Date: '2024-02-02', 'Start Time': '6:00 PM', timePeriod: 'On-Peak' }
+  ]
 
   beforeEach(() => {
     wrapper = mount(PlanSelection, {
       props: {
-        uploadedData: mockUploadedData,
+        analyzedData: mockAnalyzedData,
         preSelectedPlans: []
       }
     })
@@ -40,7 +38,67 @@ describe('PlanSelection', () => {
       expect(wrapper.vm.totalUsage).toBe(630) // 100 + 200 + 150 + 180
       expect(wrapper.vm.monthsAnalyzed).toBe(2) // Jan and Feb
       expect(wrapper.vm.averageMonthlyUsage).toBe(315) // 630 / 2
-      expect(wrapper.vm.peakUsagePercentage).toBe(60.317460317460316) // (200 + 180) / 630 * 100
+      expect(wrapper.vm.peakUsagePercentage).toBeCloseTo(60.32, 2) // (200 + 180) / 630 * 100
+    })
+
+    it('correctly calculates months from 90-day sample data format', () => {
+      // Test with data that mimics the sample.csv format (MM/DD/YYYY)
+      const sampleLikeData = [
+        { Consumption: 100, Date: '1/1/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '1/15/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '1/31/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '2/1/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '2/15/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '2/28/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '3/1/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '3/15/2025', 'Start Time': '2:00 PM' },
+        { Consumption: 100, Date: '3/31/2025', 'Start Time': '2:00 PM' }
+      ]
+      
+      const wrapperWithSampleData = mount(PlanSelection, {
+        props: {
+          analyzedData: sampleLikeData,
+          preSelectedPlans: []
+        }
+      })
+      
+      // Should be 3 months (Jan, Feb, Mar), not 9 (number of data points)
+      expect(wrapperWithSampleData.vm.monthsAnalyzed).toBe(3)
+      expect(wrapperWithSampleData.vm.monthsAnalyzed).not.toBe(9)
+      expect(wrapperWithSampleData.vm.monthsAnalyzed).not.toBe(90)
+    })
+  })
+
+  describe('Smart Recommendations', () => {
+    it('should update recommendation tiles when Get Smart Recommendations is clicked', async () => {
+      // Initial recommendations should be generated
+      expect(wrapper.vm.recommendations.length).toBeGreaterThan(0)
+      const initialRecommendations = [...wrapper.vm.recommendations]
+      
+      // Simulate clicking Get Smart Recommendations
+      await wrapper.vm.getSmartRecommendations()
+      
+      // Should have regenerated recommendations
+      expect(wrapper.vm.recommendations).toBeDefined()
+      expect(wrapper.vm.recommendations.length).toBeGreaterThan(0)
+    })
+
+    it('should update recommendations when EV eligibility changes', async () => {
+      // Initially no EV
+      expect(wrapper.vm.hasEV).toBe(false)
+      const initialRecommendations = [...wrapper.vm.recommendations]
+      const hasEVPlan = initialRecommendations.some(rec => rec.planType === 'EV-TOU-5')
+      expect(hasEVPlan).toBe(false)
+      
+      // Change EV eligibility
+      await wrapper.vm.handleEVEligibilityChange()
+      wrapper.vm.hasEV = true
+      await wrapper.vm.generateRecommendations()
+      
+      // Should now include EV plan if user has EV
+      const updatedRecommendations = wrapper.vm.recommendations
+      const nowHasEVPlan = updatedRecommendations.some(rec => rec.planType === 'EV-TOU-5')
+      expect(nowHasEVPlan).toBe(true)
     })
 
     it('displays calculated metrics in summary cards', () => {
@@ -65,15 +123,13 @@ describe('PlanSelection', () => {
 
     it('recommends TOU plans for low peak usage', async () => {
       // Create data with very low peak usage
-      const lowPeakData = {
-        data: [
-          { usage: 100, date: '2024-01-01', timePeriod: 'Off-Peak' },
-          { usage: 100, date: '2024-01-02', timePeriod: 'Off-Peak' },
-          { usage: 10, date: '2024-01-03', timePeriod: 'On-Peak' }
-        ]
-      }
+      const lowPeakData = [
+        { Consumption: 100, Date: '2024-01-01', 'Start Time': '2:00 PM', timePeriod: 'Off-Peak' },
+        { Consumption: 100, Date: '2024-01-02', 'Start Time': '2:00 PM', timePeriod: 'Off-Peak' },
+        { Consumption: 10, Date: '2024-01-03', 'Start Time': '5:00 PM', timePeriod: 'On-Peak' }
+      ]
       
-      await wrapper.setProps({ uploadedData: lowPeakData })
+      await wrapper.setProps({ analyzedData: lowPeakData })
       wrapper.vm.generateRecommendations()
       
       const touRec = wrapper.vm.recommendations.find(rec => rec.planType === 'TOU-DR1')
@@ -83,15 +139,14 @@ describe('PlanSelection', () => {
 
     it('shows different recommendations for high usage households', async () => {
       // Create data with high monthly usage
-      const highUsageData = {
-        data: Array.from({ length: 30 }, (_, i) => ({
-          usage: 30, // 900 kWh/month
-          date: `2024-01-${String(i + 1).padStart(2, '0')}`,
-          timePeriod: 'Off-Peak'
-        }))
-      }
+      const highUsageData = Array.from({ length: 30 }, (_, i) => ({
+        Consumption: 30, // 900 kWh/month
+        Date: `2024-01-${String(i + 1).padStart(2, '0')}`,
+        'Start Time': '2:00 PM',
+        timePeriod: 'Off-Peak'
+      }))
       
-      await wrapper.setProps({ uploadedData: highUsageData })
+      await wrapper.setProps({ analyzedData: highUsageData })
       wrapper.vm.generateRecommendations()
       
       const rec = wrapper.vm.recommendations.find(rec => rec.planType === 'TOU-DR2')
@@ -377,7 +432,7 @@ describe('PlanSelection', () => {
     it('respects pre-selected plans', () => {
       const preSelectedWrapper = mount(PlanSelection, {
         props: {
-          uploadedData: mockUploadedData,
+          analyzedData: mockAnalyzedData,
           preSelectedPlans: ['DR', 'TOU-DR1']
         }
       })
