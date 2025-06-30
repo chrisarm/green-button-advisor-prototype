@@ -203,10 +203,16 @@ export function useMultiPlanCalculator() {
       hasDataBeenModified.value = false;
 
       // 4. Generate summaries and comparisons
-      generateComparisons(costCalculated);
+      const finalData = generateComparisons(costCalculated);
+      
+      // Update usageData if plans were swapped
+      if (finalData) {
+        usageData.value = finalData;
+        originalUsageData.value = deepCloneWithDates(finalData);
+      }
 
       // 5. Prepare chart data
-      prepareChartData(costCalculated);
+      prepareChartData(finalData || costCalculated);
 
     } catch (err) {
       console.error("Error processing data:", err);
@@ -218,17 +224,52 @@ export function useMultiPlanCalculator() {
   };
 
   const generateComparisons = (data) => {
-    const plan1Type = selectedPlans.value[0];
-    const plan2Type = selectedPlans.value[1];
-    const plan1Info = getPlanInfo(plan1Type);
-    const plan2Info = getPlanInfo(plan2Type);
+    const originalPlan1Type = selectedPlans.value[0];
+    const originalPlan2Type = selectedPlans.value[1];
+    const originalPlan1Info = getPlanInfo(originalPlan1Type);
+    const originalPlan2Info = getPlanInfo(originalPlan2Type);
 
-    // Calculate total costs including monthly charges
+    // Calculate total costs including monthly charges for initial ordering
     const uniqueMonths = new Set(data.map(row => row.month_year_key));
     const totalMonths = uniqueMonths.size;
 
-    const totalPlan1Cost = data.reduce((sum, row) => sum + row.plan1.cost, 0) + (plan1Info.monthlyCharge * totalMonths);
-    const totalPlan2Cost = data.reduce((sum, row) => sum + row.plan2.cost, 0) + (plan2Info.monthlyCharge * totalMonths);
+    const totalOriginalPlan1Cost = data.reduce((sum, row) => sum + row.plan1.cost, 0) + (originalPlan1Info.monthlyCharge * totalMonths);
+    const totalOriginalPlan2Cost = data.reduce((sum, row) => sum + row.plan2.cost, 0) + (originalPlan2Info.monthlyCharge * totalMonths);
+    
+    // Reorder plans so cheaper plan is on the right (plan2)
+    let plan1Type, plan2Type, plan1Info, plan2Info;
+    let totalPlan1Cost, totalPlan2Cost;
+    let shouldSwapPlans = false;
+    
+    if (totalOriginalPlan1Cost < totalOriginalPlan2Cost) {
+      // Original plan1 is cheaper, so swap to put it on the right
+      plan1Type = originalPlan2Type;
+      plan2Type = originalPlan1Type;
+      plan1Info = originalPlan2Info;
+      plan2Info = originalPlan1Info;
+      totalPlan1Cost = totalOriginalPlan2Cost;
+      totalPlan2Cost = totalOriginalPlan1Cost;
+      shouldSwapPlans = true;
+    } else {
+      // Original plan2 is cheaper or same, keep original order
+      plan1Type = originalPlan1Type;
+      plan2Type = originalPlan2Type;
+      plan1Info = originalPlan1Info;
+      plan2Info = originalPlan2Info;
+      totalPlan1Cost = totalOriginalPlan1Cost;
+      totalPlan2Cost = totalOriginalPlan2Cost;
+    }
+
+    // If we swapped plans, we need to swap the row data too
+    let processedData = data;
+    if (shouldSwapPlans) {
+      processedData = data.map(row => ({
+        ...row,
+        plan1: row.plan2,  // Swap plan2 to plan1
+        plan2: row.plan1   // Swap plan1 to plan2
+      }));
+    }
+
     const totalKWh = data.reduce((sum, row) => sum + row.Consumption, 0);
     const totalSavings = totalPlan1Cost - totalPlan2Cost;
 
@@ -254,7 +295,7 @@ export function useMultiPlanCalculator() {
 
     // Period-based comparison
     const periodMap = {};
-    data.forEach((row) => {
+    processedData.forEach((row) => {
       // Use plan1 period as the grouping key (they may differ for different plan types)
       const key = `${row.season}-${row.plan1.period}`;
       if (!periodMap[key]) {
@@ -285,7 +326,7 @@ export function useMultiPlanCalculator() {
 
     // Monthly comparison
     const monthlyMap = {};
-    data.forEach((row) => {
+    processedData.forEach((row) => {
       const key = row.month_year_key;
       if (!monthlyMap[key]) {
         monthlyMap[key] = {
@@ -311,6 +352,9 @@ export function useMultiPlanCalculator() {
         plan2MonthlyCharge: plan2Info.monthlyCharge.toFixed(2)
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
+      
+    // Return the processed data in case plans were swapped
+    return shouldSwapPlans ? processedData : null;
   };
 
   const prepareChartData = (data) => {

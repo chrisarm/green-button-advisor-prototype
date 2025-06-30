@@ -16,11 +16,14 @@
       </p>
       
       <div class="summary-cards">
-        <div class="summary-card plan-left">
+        <div class="summary-card plan-left" :class="plan1CostClass">
           <div class="plan-position-label">Plan 1 (Left)</div>
           <h3>{{ overallComparison.plan1.name }}</h3>
           <div class="cost">${{ overallComparison.plan1.totalCost }}</div>
           <div class="rate">Avg: ${{ overallComparison.plan1.averageRate }}/kWh</div>
+          <div v-if="isSignificantDifference" class="cost-indicator">
+            {{ plan1IsCheaper ? '💰 Cheaper Option' : '💸 More Expensive' }}
+          </div>
         </div>
         
         <div class="summary-card comparison">
@@ -37,11 +40,14 @@
           </div>
         </div>
         
-        <div class="summary-card plan-right">
+        <div class="summary-card plan-right" :class="plan2CostClass">
           <div class="plan-position-label">Plan 2 (Right)</div>
           <h3>{{ overallComparison.plan2.name }}</h3>
           <div class="cost">${{ overallComparison.plan2.totalCost }}</div>
           <div class="rate">Avg: ${{ overallComparison.plan2.averageRate }}/kWh</div>
+          <div v-if="isSignificantDifference" class="cost-indicator">
+            {{ plan2IsCheaper ? '💰 Cheaper Option' : '💸 More Expensive' }}
+          </div>
         </div>
       </div>
       
@@ -270,6 +276,43 @@ const savingsClass = computed(() => {
   return savings > 0 ? 'positive' : 'negative'
 })
 
+// Plan cost comparison logic
+const plan1Cost = computed(() => {
+  if (!props.overallComparison) return 0
+  return parseFloat(props.overallComparison.plan1.totalCost)
+})
+
+const plan2Cost = computed(() => {
+  if (!props.overallComparison) return 0
+  return parseFloat(props.overallComparison.plan2.totalCost)
+})
+
+const costDifference = computed(() => {
+  return Math.abs(plan1Cost.value - plan2Cost.value)
+})
+
+const isSignificantDifference = computed(() => {
+  return costDifference.value > 1.00 // Only show indicators if difference > $1
+})
+
+const plan1IsCheaper = computed(() => {
+  return plan1Cost.value < plan2Cost.value
+})
+
+const plan2IsCheaper = computed(() => {
+  return plan2Cost.value < plan1Cost.value
+})
+
+const plan1CostClass = computed(() => {
+  if (!isSignificantDifference.value) return ''
+  return plan1IsCheaper.value ? 'cheaper-plan' : 'expensive-plan'
+})
+
+const plan2CostClass = computed(() => {
+  if (!isSignificantDifference.value) return ''
+  return plan2IsCheaper.value ? 'cheaper-plan' : 'expensive-plan'
+})
+
 const getDifferenceClass = (difference) => {
   const diff = parseFloat(difference)
   if (Math.abs(diff) <= 0.01) return 'neutral'
@@ -434,6 +477,49 @@ const savingsChartOptions = computed(() => ({
   color: white;
 }
 
+/* Override position label colors when cost comparison is active */
+.cheaper-plan .plan-position-label {
+  background: linear-gradient(135deg, var(--success-color), #45a049) !important;
+  color: white !important;
+}
+
+.expensive-plan .plan-position-label {
+  background: linear-gradient(135deg, #FF9800, #f57c00) !important;
+  color: white !important;
+}
+
+/* Cost comparison styling */
+.cheaper-plan {
+  border-color: var(--success-color) !important;
+  background: rgba(76, 175, 80, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2) !important;
+}
+
+.expensive-plan {
+  border-color: #FF9800 !important;
+  background: rgba(255, 152, 0, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2) !important;
+}
+
+.cost-indicator {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cheaper-plan .cost-indicator {
+  background: var(--success-color);
+  color: white;
+}
+
+.expensive-plan .cost-indicator {
+  background: #FF9800;
+  color: white;
+}
+
 .summary-card.comparison {
   border-color: var(--link-color) !important;
   max-width: 200px;
@@ -448,6 +534,15 @@ const savingsChartOptions = computed(() => ({
 /* Dark theme comparison card */
 :root[data-theme="dark"] .summary-card.comparison {
   background: linear-gradient(135deg, var(--button-bg), var(--input-bg)) !important;
+}
+
+/* Dark theme overrides for cost comparison */
+:root[data-theme="dark"] .cheaper-plan {
+  background: rgba(76, 175, 80, 0.15) !important;
+}
+
+:root[data-theme="dark"] .expensive-plan {
+  background: rgba(255, 152, 0, 0.15) !important;
 }
 
 /* Fallback for no theme specified */

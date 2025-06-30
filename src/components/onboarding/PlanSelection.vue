@@ -48,10 +48,10 @@
         >
           <span v-if="!isLoading" class="btn-icon">🧠</span>
           <span v-else class="btn-icon loading">⏳</span>
-          {{ isLoading ? 'Analyzing Your Usage...' : 'Get Smart Recommendations' }}
+          {{ isLoading ? 'Analyzing Your Usage...' : 'Select Smart Recommendations' }}
         </button>
         <p class="recommendation-help">
-          We'll analyze your usage patterns and recommend the 2 best plans for you
+          We'll analyze your usage patterns and recommend the 2 best plans for you, then click this button to compare them automatically
         </p>
         
         <!-- EV Eligibility Question -->
@@ -119,7 +119,7 @@
             </span>
           </div>
           
-          <div v-if="isRecommended(plan.type)" class="recommended-star">⭐</div>
+          <div v-if="recommendedPlanTypes.includes(plan.type)" class="recommended-star">⭐</div>
           
           <div class="plan-header">
             <h4>{{ plan.type }}</h4>
@@ -320,53 +320,13 @@ const generateRecommendations = () => {
   const avgMonthly = averageMonthlyUsage.value
   const peakPercent = peakUsagePercentage.value
   
-  console.log('PlanSelection: Generating recommendations with avgMonthly:', avgMonthly, 'peakPercent:', peakPercent);
+  console.log('PlanSelection: Generating recommendations with avgMonthly:', avgMonthly, 'peakPercent:', peakPercent, 'hasEV:', hasEV.value);
   
   const recs = []
 
-  // Always recommend DR as baseline
-  recs.push({
-    planType: 'DR',
-    reason: 'Simple, predictable pricing structure',
-    highlights: [
-      'No time-of-use complexity',
-      'Good for consistent usage patterns',
-      'Easy to understand bills'
-    ],
-    featured: avgMonthly < 600 || peakPercent > 40
-  })
-
-  // Recommend TOU plans based on usage patterns
-  if (peakPercent < 25) {
-    recs.push({
-      planType: 'TOU-DR1',
-      reason: 'Low peak usage suggests good potential for time-of-use savings',
-      highlights: [
-        'Lowest off-peak rates',
-        'Super off-peak discounts',
-        'Good for flexible schedules'
-      ],
-      featured: true,
-      potentialSavings: Math.round(avgMonthly * 0.15)
-    })
-  }
-
-  if (avgMonthly > 800) {
-    recs.push({
-      planType: 'TOU-DR2',
-      reason: 'High usage households often benefit from TOU-DR2 structure',
-      highlights: [
-        'Competitive rates for high usage',
-        'No super off-peak complexity',
-        'Balanced time-of-use option'
-      ],
-      featured: peakPercent < 30,
-      potentialSavings: Math.round(avgMonthly * 0.12)
-    })
-  }
-
-  // Recommend EV plan if user has an EV
+  // If user has EV, prioritize EV plan and one other plan
   if (hasEV.value) {
+    // Always recommend EV plan for EV owners
     recs.push({
       planType: 'EV-TOU-5',
       reason: 'Optimized for electric vehicle owners with overnight charging rates',
@@ -378,9 +338,90 @@ const generateRecommendations = () => {
       featured: true,
       potentialSavings: Math.round(avgMonthly * 0.20)
     })
+
+    // Choose best second plan for EV owners
+    if (peakPercent < 25) {
+      recs.push({
+        planType: 'TOU-DR1',
+        reason: 'Alternative time-of-use option with competitive rates',
+        highlights: [
+          'Lowest off-peak rates',
+          'Super off-peak discounts',
+          'Good for flexible schedules'
+        ],
+        featured: true,
+        potentialSavings: Math.round(avgMonthly * 0.15)
+      })
+    } else {
+      recs.push({
+        planType: 'DR',
+        reason: 'Simple baseline comparison to EV plan',
+        highlights: [
+          'No time-of-use complexity',
+          'Predictable pricing structure',
+          'Easy to understand bills'
+        ],
+        featured: true
+      })
+    }
+  } else {
+    // No EV - recommend best 2 non-EV plans
+    
+    // Always include DR as a baseline option
+    recs.push({
+      planType: 'DR',
+      reason: 'Simple, predictable pricing structure',
+      highlights: [
+        'No time-of-use complexity',
+        'Good for consistent usage patterns',
+        'Easy to understand bills'
+      ],
+      featured: avgMonthly < 600 || peakPercent > 40
+    })
+
+    // Choose best TOU plan based on usage patterns
+    if (peakPercent < 25) {
+      recs.push({
+        planType: 'TOU-DR1',
+        reason: 'Low peak usage suggests good potential for time-of-use savings',
+        highlights: [
+          'Lowest off-peak rates',
+          'Super off-peak discounts',
+          'Good for flexible schedules'
+        ],
+        featured: true,
+        potentialSavings: Math.round(avgMonthly * 0.15)
+      })
+    } else if (avgMonthly > 800) {
+      recs.push({
+        planType: 'TOU-DR2',
+        reason: 'High usage households often benefit from TOU-DR2 structure',
+        highlights: [
+          'Competitive rates for high usage',
+          'No super off-peak complexity',
+          'Balanced time-of-use option'
+        ],
+        featured: true,
+        potentialSavings: Math.round(avgMonthly * 0.12)
+      })
+    } else {
+      // For moderate usage and peak patterns, recommend TOU-DR2 as general TOU option
+      recs.push({
+        planType: 'TOU-DR2',
+        reason: 'Balanced time-of-use option for typical usage patterns',
+        highlights: [
+          'Balanced TOU rates',
+          'Good middle-ground option',
+          'Simpler than TOU-DR1'
+        ],
+        featured: true,
+        potentialSavings: Math.round(avgMonthly * 0.10)
+      })
+    }
   }
 
-  recommendations.value = recs.slice(0, 3) // Limit to 3 recommendations
+  // Always limit to exactly 2 recommendations
+  recommendations.value = recs.slice(0, 2)
   console.log('PlanSelection: Generated recommendations:', recommendations.value)
 }
 
@@ -388,15 +429,21 @@ const isRecommended = (planType) => {
   return recommendations.value.some(rec => rec.planType === planType && rec.featured)
 }
 
+// Make recommendations reactive for plan card styling
+const recommendedPlanTypes = computed(() => {
+  return recommendations.value.filter(rec => rec.featured).map(rec => rec.planType)
+})
+
 const getPlanClass = (plan) => {
   const classes = []
   
   if (plan.selected) classes.push('selected')
   if (selectedCount.value >= 2 && !plan.selected) classes.push('disabled')
-  if (isRecommended(plan.type)) classes.push('recommended')
+  // Use computed property to ensure reactivity
+  if (recommendedPlanTypes.value.includes(plan.type)) classes.push('recommended')
   
   const result = classes.join(' ')
-  console.log(`PlanSelection: getPlanClass for ${plan.type}: selected=${plan.selected}, classes="${result}"`);
+  console.log(`PlanSelection: getPlanClass for ${plan.type}: selected=${plan.selected}, isRecommended=${recommendedPlanTypes.value.includes(plan.type)}, classes="${result}"`);
   
   return result
 }

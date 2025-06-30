@@ -98,7 +98,7 @@ describe('PlanEducation', () => {
       const planCard = wrapper.find('.plan-detail-card')
       
       expect(planCard.find('h4').exists()).toBe(true) // Plan type
-      expect(planCard.find('.monthly-charge').exists()).toBe(true) // Monthly charge
+      // Monthly charge only shows if >= $1
       expect(planCard.find('.plan-name').exists()).toBe(true) // Plan name
       expect(planCard.find('.plan-desc').exists()).toBe(true) // Description
     })
@@ -145,10 +145,13 @@ describe('PlanEducation', () => {
       })
     })
 
-    it('displays monthly charges correctly', () => {
-      const monthlyCharge = wrapper.find('.monthly-charge')
-      expect(monthlyCharge.exists()).toBe(true)
-      expect(monthlyCharge.text()).toMatch(/\$\d+\.\d{2}\/month/)
+    it('displays monthly charges correctly when >= $1', () => {
+      // Monthly charges under $1 are now hidden, so check for plans that have them
+      const monthlyCharges = wrapper.findAll('.monthly-charge')
+      // Some plans may have monthly charges >= $1, others may not show them
+      monthlyCharges.forEach(charge => {
+        expect(charge.text()).toMatch(/\$\d+\.\d{2}\/month/)
+      })
     })
 
     it('shows requirements when they exist', async () => {
